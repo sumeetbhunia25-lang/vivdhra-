@@ -1,0 +1,6 @@
+{
+  "name": "Vividhra",
+  "description": "Premium luxury women's clothing ecommerce platform focusing on purposeful and sustainable fashion.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
