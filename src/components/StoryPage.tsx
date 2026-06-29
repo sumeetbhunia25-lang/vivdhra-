@@ -9,7 +9,7 @@ export default function StoryPage() {
         <span className="text-[10px] uppercase tracking-[0.3em] font-mono text-[#c2a46c] font-semibold bg-[#c2a46c]/10 px-3 py-1 rounded-full">
           OUR RATIONALE & METIER
         </span>
-        <h1 className="serif-header text-3xl md:text-5xl font-bold tracking-tight text-[#1c1917]">
+        <h1 className="serif-header text-3xl md:text-5xl font-medium tracking-wide text-[#1c1917]">
           The Story of VIVIDHRA
         </h1>
         <p className="text-sm md:text-base text-[#78716c] font-light italic font-serif">

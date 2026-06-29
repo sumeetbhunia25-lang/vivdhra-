@@ -10,11 +10,11 @@ export default function Footer({ setActiveView }: FooterProps) {
       <div className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
         
         {/* Brand Column */}
-        <div className="flex flex-col space-y-4 md:col-span-1">
-          <span className="serif-header text-2xl font-bold tracking-[0.25em] text-[#fafaf9] uppercase">
+        <div className="flex flex-col space-y-2.5 md:col-span-1">
+          <span className="serif-header text-2xl font-normal tracking-[-0.08em] text-[#fafaf9] uppercase">
             VIVIDHRA
           </span>
-          <p className="text-[10px] tracking-[0.2em] uppercase font-outfit text-[#a8a29e] font-light">
+          <p className="text-[9px] tracking-[0.25em] uppercase font-outfit text-[#a8a29e] font-light">
             Dress with purpose
           </p>
           <p className="text-xs text-[#a8a29e] leading-relaxed max-w-sm pt-2">

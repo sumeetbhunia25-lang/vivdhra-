@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, ShoppingBag, PieChart, TrendingUp, AlertTriangle, Sparkles, Plus, Edit2, Trash2, Check, RefreshCw } from 'lucide-react';
+import { Package, ShoppingBag, PieChart, TrendingUp, AlertTriangle, Sparkles, Plus, Edit2, Trash2, Check, RefreshCw, Download } from 'lucide-react';
 import { Product, Order, DonationTarget } from '../types';
 
 interface AdminPanelProps {
@@ -115,29 +115,41 @@ export default function AdminPanel({
           </p>
         </div>
 
-        {/* Tab Switchers */}
-        <div className="flex bg-[#f5f5f4] p-1 rounded-xl border border-[#e7e5e4] self-stretch md:self-auto justify-between gap-1">
-          {[
-            { id: 'insights', label: 'AI Insights', icon: PieChart },
-            { id: 'products', label: 'Garment CRUD', icon: Package },
-            { id: 'orders', label: 'Order Tracking', icon: ShoppingBag },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-outfit font-medium transition-all cursor-pointer ${
-                  activeTab === tab.id
-                    ? 'bg-white text-[#1c1917] shadow-xs font-bold'
-                    : 'text-[#78716c] hover:text-[#1c1917]'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+        {/* Tab Switchers & Actions */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <div className="flex bg-[#f5f5f4] p-1 rounded-xl border border-[#e7e5e4] flex-1 md:flex-initial justify-between gap-1">
+            {[
+              { id: 'insights', label: 'AI Insights', icon: PieChart },
+              { id: 'products', label: 'Garment CRUD', icon: Package },
+              { id: 'orders', label: 'Order Tracking', icon: ShoppingBag },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-outfit font-medium transition-all cursor-pointer ${
+                    activeTab === tab.id
+                      ? 'bg-white text-[#1c1917] shadow-xs font-bold'
+                      : 'text-[#78716c] hover:text-[#1c1917]'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <a
+            href="/api/admin/download-db"
+            download="vividhra_db.json"
+            className="flex items-center justify-center space-x-1.5 px-4 py-2.5 bg-[#1c1917] hover:bg-[#3c3734] text-white rounded-xl text-xs font-mono tracking-tight transition-all shadow-xs cursor-pointer"
+            title="Download database copy"
+          >
+            <Download className="w-3.5 h-3.5 text-[#c2a46c]" />
+            <span>Backup DB JSON</span>
+          </a>
         </div>
       </div>
 

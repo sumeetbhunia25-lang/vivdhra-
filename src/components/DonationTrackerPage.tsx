@@ -72,7 +72,7 @@ export default function DonationTrackerPage({ charities, logs, onDonate }: Donat
         <span className="text-[10px] uppercase tracking-[0.3em] font-mono text-[#c2a46c] font-semibold bg-[#c2a46c]/10 px-3 py-1 rounded-full">
           DRESS WITH PURPOSE
         </span>
-        <h1 className="serif-header text-3xl md:text-5xl font-bold tracking-tight text-[#1c1917]">
+        <h1 className="serif-header text-3xl md:text-5xl font-medium tracking-wide text-[#1c1917]">
           The Purpose Ledger & Tracker
         </h1>
         <p className="text-sm md:text-base text-[#57534e] font-light leading-relaxed">

@@ -21,7 +21,10 @@ import {
   Unlock,
   Package,
   Sliders,
-  DollarSign
+  DollarSign,
+  Mail,
+  Send,
+  Check
 } from 'lucide-react';
 import { Product, CartItem, WishlistItem, Order, DonationTarget, DonationLog, FitProfile, UserAccount } from './types';
 import Header from './components/Header';
@@ -92,6 +95,19 @@ export default function App() {
   const [checkoutCharities, setCheckoutCharities] = useState<string[]>([]);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState('');
+
+  // States to preserve details for the simulated email order receipt
+  const [lastOrderItems, setLastOrderItems] = useState<any[]>([]);
+  const [lastOrderSubtotal, setLastOrderSubtotal] = useState(0);
+  const [lastOrderRoundUp, setLastOrderRoundUp] = useState(0);
+  const [lastOrderTotal, setLastOrderTotal] = useState(0);
+  const [lastOrderCharities, setLastOrderCharities] = useState<string[]>([]);
+  const [lastOrderEmail, setLastOrderEmail] = useState('');
+  const [lastOrderName, setLastOrderName] = useState('');
+  const [lastOrderAddress, setLastOrderAddress] = useState('');
+  const [lastOrderCity, setLastOrderCity] = useState('');
+  const [isEmailResending, setIsEmailResending] = useState(false);
+  const [emailResentSuccess, setEmailResentSuccess] = useState(false);
 
   // Fetch full-stack database states
   const loadData = async () => {
@@ -270,6 +286,19 @@ export default function App() {
       });
 
       const data = await res.json();
+      
+      // Store checkout parameters for the simulated email order receipt
+      setLastOrderItems([...cart]);
+      setLastOrderSubtotal(cartSubtotal);
+      setLastOrderRoundUp(computedRoundUp);
+      setLastOrderTotal(checkoutTotal);
+      setLastOrderCharities(isRoundUpEnabled ? [...checkoutCharities] : []);
+      setLastOrderEmail(checkoutEmail);
+      setLastOrderName(checkoutName);
+      setLastOrderAddress(checkoutAddress);
+      setLastOrderCity(checkoutCity);
+      setEmailResentSuccess(false); // Reset resend indicator
+      
       setPlacedOrderId(data.orderId || Math.floor(1000 + Math.random() * 9000).toString());
       setCheckoutSuccess(true);
       setCart([]); // Clear Cart
@@ -354,7 +383,7 @@ export default function App() {
                     Women Exclusive &bull; Sustainable Couture
                   </span>
                   
-                  <h1 className="serif-header text-4xl sm:text-6xl md:text-7xl font-extralight tracking-[0.2em] leading-none text-white uppercase max-w-3xl drop-shadow-xs">
+                  <h1 className="serif-header text-5xl sm:text-7xl md:text-8xl font-normal tracking-[-0.09em] leading-none text-white uppercase max-w-3xl drop-shadow-md">
                     VIVIDHRA
                   </h1>
                   
@@ -422,7 +451,7 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+                <div className="flex overflow-x-auto pb-4 gap-6 snap-x snap-mandatory lg:grid lg:grid-cols-3 xl:grid-cols-6 lg:overflow-x-visible lg:pb-0 scrollbar-none">
                   {products.filter(p => ['p14', 'p15', 'p16', 'p17', 'p18', 'p19'].includes(p.id)).map((p) => {
                     // Match visual label descriptions
                     const structureLabels: Record<string, { body: string; vibe: string }> = {
@@ -439,7 +468,7 @@ export default function App() {
                       <div
                         key={p.id}
                         onClick={() => setSelectedProduct(p)}
-                        className="bg-white border border-[#e7e5e4] rounded-2xl p-3 flex flex-col justify-between group hover:border-[#c2a46c] transition-all duration-300 cursor-pointer hover:shadow-md hover:scale-[1.01]"
+                        className="flex-none w-[260px] sm:w-[300px] lg:w-auto snap-start bg-white border border-[#e7e5e4] rounded-2xl p-3 flex flex-col justify-between group hover:border-[#c2a46c] transition-all duration-300 cursor-pointer hover:shadow-md hover:scale-[1.01]"
                       >
                         <div className="space-y-3">
                           <div className="aspect-[3/4] rounded-xl overflow-hidden bg-stone-100 relative">
@@ -525,7 +554,7 @@ export default function App() {
                     <p className="text-sm text-[#78716c] font-outfit">No garments found matching criteria.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                  <div className="flex overflow-x-auto pb-6 gap-6 snap-x snap-mandatory scrollbar-none w-full">
                     {filteredProducts.map((prod) => (
                       <ZaraStyleProductCard
                         key={prod.id}
@@ -534,6 +563,7 @@ export default function App() {
                         onWishlistToggle={handleToggleWishlist}
                         isWishlisted={wishlist.some((w) => w.product.id === prod.id)}
                         onQuickView={(p) => setSelectedProduct(p)}
+                        className="flex-none w-[315px] sm:w-[380px] md:w-[410px] lg:w-[440px] snap-start"
                       />
                     ))}
                   </div>
@@ -1200,41 +1230,238 @@ export default function App() {
       {/* 8. Checkout Purchase Overlay */}
       {isCheckoutOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 md:p-8 relative border shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className={`bg-white rounded-2xl w-full p-6 md:p-8 relative border shadow-2xl max-h-[90vh] overflow-y-auto transition-all duration-300 ${checkoutSuccess ? 'max-w-3xl' : 'max-w-lg'}`}>
             
             <button
               onClick={() => setIsCheckoutOpen(false)}
-              className="absolute top-4 right-4 p-2 bg-[#f5f5f4] hover:bg-[#e7e5e4] rounded-full cursor-pointer"
+              className="absolute top-4 right-4 p-2 bg-[#f5f5f4] hover:bg-[#e7e5e4] rounded-full cursor-pointer z-10"
             >
               <X className="w-4 h-4 text-stone-800" />
             </button>
 
             {checkoutSuccess ? (
-              <div className="text-center py-8 space-y-4">
-                <div className="p-4 bg-emerald-50 text-emerald-600 rounded-full w-fit mx-auto border border-emerald-100">
-                  <CheckCircle className="w-12 h-12" />
+              <div className="space-y-6 animate-fade-in">
+                {/* Header with Email Simulator Status */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 gap-4">
+                  <div>
+                    <h3 className="serif-header text-xl md:text-2xl font-bold text-stone-900 flex items-center gap-2">
+                      <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0" />
+                      <span>Order Completed!</span>
+                    </h3>
+                    <p className="text-xs text-stone-500 font-outfit mt-0.5">
+                      Simulated confirmation email has been dispatched.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 self-start sm:self-center">
+                    <button
+                      type="button"
+                      disabled={isEmailResending}
+                      onClick={() => {
+                        setIsEmailResending(true);
+                        setTimeout(() => {
+                          setIsEmailResending(false);
+                          setEmailResentSuccess(true);
+                          setTimeout(() => setEmailResentSuccess(false), 4000);
+                        }, 1200);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#c2a46c]/10 hover:bg-[#c2a46c]/20 text-[#c2a46c] hover:text-stone-900 text-[11px] uppercase tracking-wider font-mono font-bold rounded-lg border border-[#c2a46c]/20 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {isEmailResending ? (
+                        <>
+                          <Sparkles className="w-3 h-3 animate-spin" />
+                          <span>Dispatching...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-3.5 h-3.5" />
+                          <span>Resend simulated receipt</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <h3 className="serif-header text-xl md:text-2xl font-bold text-stone-900">
-                  Purchase Transacted Successfully
-                </h3>
-                <p className="text-xs text-stone-600 max-w-sm mx-auto leading-relaxed font-outfit">
-                  An amount of <strong className="text-stone-900">₹{checkoutTotal}</strong> has been secured under Order ID <strong className="text-stone-900 font-mono">#{placedOrderId}</strong>. 
-                  Thank you deeply for your support.
-                </p>
-                <div className="p-4 bg-stone-50 rounded-xl border">
-                  <p className="text-[10px] uppercase font-mono tracking-wider text-stone-500">Charitable split logged</p>
-                  <p className="text-xs text-emerald-700 font-bold mt-1">₹{computedRoundUp} successfully routed to community pools</p>
+
+                {emailResentSuccess && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs rounded-xl flex items-center gap-2 animate-fade-in font-outfit">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Simulated receipt successfully dispatched to <strong>{lastOrderEmail}</strong>!</span>
+                  </div>
+                )}
+
+                {/* Simulated Email Envelope Client */}
+                <div className="bg-[#FAF9F5] border border-stone-200 rounded-2xl overflow-hidden shadow-xs">
+                  {/* Email Client Header Bar */}
+                  <div className="bg-stone-100 px-4 py-3 border-b border-stone-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-rose-400" />
+                      <div className="w-3 h-3 rounded-full bg-amber-400" />
+                      <div className="w-3 h-3 rounded-full bg-emerald-400" />
+                    </div>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-stone-500 font-bold">Simulated Email Client</span>
+                    <div className="w-12" />
+                  </div>
+
+                  {/* Email Headers */}
+                  <div className="p-4 space-y-1.5 text-xs border-b border-stone-200/60 bg-white/50 font-outfit">
+                    <div className="grid grid-cols-[60px_1fr] text-stone-500">
+                      <span>From:</span>
+                      <span className="text-stone-800 font-medium font-outfit">atelier@vividhra.com &lt;Vividhra Atelier Mumbai&gt;</span>
+                    </div>
+                    <div className="grid grid-cols-[60px_1fr] text-stone-500">
+                      <span>To:</span>
+                      <span className="text-stone-800 font-medium font-mono">{lastOrderEmail} ({lastOrderName})</span>
+                    </div>
+                    <div className="grid grid-cols-[60px_1fr] text-stone-500">
+                      <span>Subject:</span>
+                      <span className="text-stone-900 font-bold">Order Confirmation & Impact Receipt - #{placedOrderId}</span>
+                    </div>
+                    <div className="grid grid-cols-[60px_1fr] text-stone-500">
+                      <span>Date:</span>
+                      <span className="text-stone-700 font-mono">{new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                    </div>
+                  </div>
+
+                  {/* Email Body Content */}
+                  <div className="bg-white p-6 space-y-6 font-outfit text-[#1c1917] max-h-[45vh] overflow-y-auto">
+                    {/* Brand Banner */}
+                    <div className="text-center pb-6 border-b border-stone-100">
+                      <span className="serif-header font-normal text-2xl tracking-[-0.08em] uppercase text-stone-900 block">VIVIDHRA</span>
+                      <span className="text-[9px] uppercase tracking-widest font-mono text-[#c2a46c] block mt-1">tailored coordinates with purpose</span>
+                    </div>
+
+                    {/* Greeting */}
+                    <div className="space-y-2">
+                      <p className="font-serif text-sm font-bold text-stone-950">Dear {lastOrderName},</p>
+                      <p className="text-xs text-stone-600 leading-relaxed">
+                        We are honored to confirm receipt of your tailored order. Our master artisans at the Mumbai atelier are now preparing your selected items with surgical precision. 
+                        A summary of your transactions, shipping coordinates, and your community charity ledger split are structured below.
+                      </p>
+                    </div>
+
+                    {/* Details and Shipping */}
+                    <div className="bg-stone-50 p-3.5 rounded-xl border border-stone-100 text-xs space-y-2 leading-relaxed">
+                      <p className="font-bold text-stone-800 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-[#c2a46c]" />
+                        <span>Delivery Coordinates</span>
+                      </p>
+                      <p className="text-stone-600 font-mono pl-4.5">
+                        {lastOrderName} <br />
+                        {lastOrderAddress}, {lastOrderCity} <br />
+                        Secured Air Courier Dispatch
+                      </p>
+                    </div>
+
+                    {/* Cart Items List */}
+                    <div className="space-y-3">
+                      <h4 className="text-[10px] uppercase tracking-wider font-mono text-stone-500 font-bold border-b pb-1">Garments in tailors' queue</h4>
+                      <div className="divide-y divide-stone-100">
+                        {lastOrderItems.map((item, index) => (
+                          <div key={index} className="py-2.5 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <img
+                                src={item.product.images[0]}
+                                alt=""
+                                referrerPolicy="no-referrer"
+                                className="w-10 h-13 object-cover rounded bg-stone-50 border border-stone-200 shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <p className="font-serif text-xs font-bold text-stone-900 truncate">{item.product.name}</p>
+                                <p className="text-[9px] text-stone-500 font-mono mt-0.5">
+                                  Size: {item.size} | Color: {item.color} | Qty: {item.quantity}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="font-mono text-xs font-bold text-stone-800 shrink-0">
+                              ₹{item.product.price * item.quantity}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Pricing Grid */}
+                    <div className="border-t pt-3 space-y-2 text-xs">
+                      <div className="flex justify-between text-stone-500">
+                        <span>Sourced Subtotal</span>
+                        <span className="font-mono text-stone-800">₹{lastOrderSubtotal}</span>
+                      </div>
+                      {lastOrderRoundUp > 0 && (
+                        <div className="flex justify-between text-emerald-700 font-semibold bg-emerald-50/50 p-1.5 rounded-md">
+                          <span className="flex items-center gap-1">🌿 Dress with Purpose Roundup</span>
+                          <span className="font-mono">₹{lastOrderRoundUp}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm font-bold text-stone-900 pt-2 border-t">
+                        <span>Total Transacted & Settled</span>
+                        <span className="font-mono text-[#c2a46c]">₹{lastOrderTotal}</span>
+                      </div>
+                    </div>
+
+                    {/* Charity Impact Summary */}
+                    {lastOrderRoundUp > 0 && lastOrderCharities.length > 0 ? (
+                      <div className="bg-emerald-50/40 border border-emerald-100/80 rounded-xl p-4 space-y-3.5">
+                        <div className="space-y-1 text-center">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-800 block">🌱 Purpose Split Analysis</span>
+                          <p className="text-xs text-emerald-800 font-bold">
+                            ₹{lastOrderRoundUp} split equally among {lastOrderCharities.length} community partners
+                          </p>
+                          <p className="text-[10px] text-emerald-600 leading-normal max-w-md mx-auto">
+                            Thank you! Under our immutable ledger, 100% of your round-up is transferred to direct-support community programs.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          {charities
+                            .filter((c) => lastOrderCharities.includes(c.id))
+                            .map((c) => {
+                              const share = (lastOrderRoundUp / lastOrderCharities.length).toFixed(2);
+                              return (
+                                <div key={c.id} className="bg-white p-3 rounded-lg border border-emerald-100 space-y-2 flex flex-col justify-between shadow-3xs">
+                                  <div className="space-y-1">
+                                    <p className="text-xs font-bold text-stone-900 font-outfit flex items-center gap-1.5">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                      <span>{c.name}</span>
+                                    </p>
+                                    <p className="text-[10px] text-stone-500 leading-normal font-outfit">
+                                      {c.description}
+                                    </p>
+                                  </div>
+                                  <div className="pt-2 border-t border-stone-50 mt-1 flex items-center justify-between">
+                                    <span className="text-[9px] uppercase tracking-wider font-mono text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">Dispatched</span>
+                                    <span className="font-mono text-xs font-bold text-emerald-700 font-outfit">₹{share}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-stone-50 rounded-xl text-center text-xs text-stone-500 border border-stone-100 font-outfit">
+                        No charity round-up was chosen for this transaction. Feel free to opt-in on future coordinates to split spare change with social causes!
+                      </div>
+                    )}
+
+                    {/* Closing Slogan */}
+                    <div className="text-center pt-6 border-t border-stone-100 text-stone-400 space-y-1">
+                      <p className="text-[11px] italic font-serif">&ldquo;Dress with precision, act with purpose.&rdquo;</p>
+                      <p className="text-[9px] font-mono tracking-wider uppercase">Vividhra Atelier Mumbai © 2026</p>
+                    </div>
+
+                  </div>
                 </div>
-                <button
-                  onClick={() => {
-                    setIsCheckoutOpen(false);
-                    setCheckoutSuccess(false);
-                    setActiveView('donations');
-                  }}
-                  className="px-6 py-2 bg-stone-900 text-white hover:bg-stone-800 text-xs uppercase tracking-widest font-outfit font-medium rounded-lg transition-all cursor-pointer"
-                >
-                  View Purpose Ledger
-                </button>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={() => {
+                      setIsCheckoutOpen(false);
+                      setCheckoutSuccess(false);
+                    }}
+                    className="px-6 py-2.5 bg-stone-900 text-white hover:bg-stone-800 text-xs uppercase tracking-widest font-outfit font-medium rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>Done & Continue Sourcing</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handlePlaceOrder} className="space-y-5">

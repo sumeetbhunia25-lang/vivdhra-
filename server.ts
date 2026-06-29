@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
 
@@ -967,6 +967,21 @@ Return your response in a clean JSON format matching the following schema struct
       sizingAdvisory: "Hourglass and athletic body types report high satisfaction with wrap dresses. Suggest monitoring shoulder sizes for the Elysian Blazer closely.",
       donationImpact: "Our patrons' checkout rounded-up donations have funded 120+ animal shelter food bags and sponsored several educational kits at Yuva Orphans Trust."
     });
+  }
+});
+
+// Download full database backup JSON
+app.get('/api/admin/download-db', (req, res) => {
+  try {
+    if (fs.existsSync(DB_PATH)) {
+      res.download(DB_PATH, 'vividhra_db.json');
+    } else {
+      fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), 'utf-8');
+      res.download(DB_PATH, 'vividhra_db.json');
+    }
+  } catch (error) {
+    console.error('Error downloading database:', error);
+    res.status(500).json({ error: 'Failed to download database file.' });
   }
 });
 
