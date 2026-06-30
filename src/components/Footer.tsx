@@ -1,7 +1,7 @@
 import { Compass, Mail, Phone, MapPin, Sparkles, Shield, Heart } from 'lucide-react';
 
 interface FooterProps {
-  setActiveView: (view: 'home' | 'story' | 'donations' | 'profile' | 'admin' | 'shop') => void;
+  setActiveView: (view: 'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop') => void;
 }
 
 export default function Footer({ setActiveView }: FooterProps) {
@@ -46,10 +46,10 @@ export default function Footer({ setActiveView }: FooterProps) {
             </li>
             <li>
               <button
-                onClick={() => setActiveView('donations')}
+                onClick={() => setActiveView('stylist')}
                 className="hover:text-[#fafaf9] transition-all cursor-pointer"
               >
-                Purpose & Charities
+                AI Stylist
               </button>
             </li>
             <li>

@@ -283,7 +283,7 @@ export default function AISilhouetteStudio({ products, onSelectProduct }: AISilh
               <p className="text-[10px] uppercase tracking-wider font-mono font-bold text-stone-500">
                 Tailored Wardrobe Picks
               </p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {recommendedProducts.map((p) => (
                   <div
                     key={p.id}

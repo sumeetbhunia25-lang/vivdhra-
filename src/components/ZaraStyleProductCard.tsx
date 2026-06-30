@@ -28,12 +28,55 @@ export default function ZaraStyleProductCard({
     setSelectedSize(null);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const target = e.target as HTMLElement;
+      // If the user focused a nested button (like Wishlist or Quick Add sizes),
+      // we let the button's native onClick handler handle it.
+      if (target.tagName !== 'BUTTON') {
+        e.preventDefault();
+        onQuickView(product);
+      }
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const currentCard = e.currentTarget;
+      const parent = currentCard.parentElement;
+      if (parent) {
+        const cards = Array.from(parent.children) as HTMLElement[];
+        const index = cards.indexOf(currentCard);
+        if (index !== -1 && index < cards.length - 1) {
+          const nextCard = cards[index + 1];
+          nextCard.focus();
+          nextCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      }
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const currentCard = e.currentTarget;
+      const parent = currentCard.parentElement;
+      if (parent) {
+        const cards = Array.from(parent.children) as HTMLElement[];
+        const index = cards.indexOf(currentCard);
+        if (index > 0) {
+          const prevCard = cards[index - 1];
+          prevCard.focus();
+          prevCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      }
+    }
+  };
+
   return (
     <div
-      className={`group relative flex flex-row bg-white rounded-3xl overflow-hidden transition-all duration-700 hover:shadow-xl border border-gray-100/90 cursor-pointer ${className}`}
+      tabIndex={0}
+      className={`group relative flex flex-row bg-white rounded-3xl overflow-hidden transition-all duration-700 hover:shadow-xl border border-gray-100/90 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c2a46c] focus-visible:ring-offset-2 ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsHovered(true)}
+      onBlur={() => setIsHovered(false)}
       onClick={() => onQuickView(product)}
+      onKeyDown={handleKeyDown}
+      aria-label={`${product.name}, Price ₹${product.price}. Press Enter for Quick View.`}
     >
       {/* Left Column: Zara-Style Dual-Image Container */}
       <div className="relative w-[115px] sm:w-[150px] md:w-[170px] aspect-[3/4] bg-[#f5f5f4] overflow-hidden shrink-0">

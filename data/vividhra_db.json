@@ -1,0 +1,667 @@
+{
+  "products": [
+    {
+      "id": "p14",
+      "name": "Atelier Tailored Vest & Trouser Set",
+      "category": "co-ords",
+      "price": 3499,
+      "originalPrice": 4500,
+      "description": "A premium layered ensemble featuring a structured khaki vest layered elegantly over a white patterned puff-sleeve shirt, paired with high-waisted, fluid brown trousers. A signature multi-scenario masterwork.",
+      "slogan": "Dress with purpose",
+      "materials": "100% GOTS Organic Cotton & Sustainable Lyocell",
+      "care": "Dry clean recommended to preserve tailored lines. Warm steam iron.",
+      "images": [
+        "https://images.unsplash.com/photo-1548624149-f9b1859aa7d0?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Desert Khaki & Brown",
+        "Classic Charcoal",
+        "Chalk Sand"
+      ],
+      "inStock": true,
+      "fitType": "regular",
+      "isTrending": true
+    },
+    {
+      "id": "p15",
+      "name": "Kaya Asymmetric Draped Wrap Top",
+      "category": "tops",
+      "price": 1699,
+      "originalPrice": 2299,
+      "description": "An architecturally draped high-neck top in sand-beige weave, featuring an asymmetric fold-over neckline and sophisticated front pleats. Highly versatile silhouette.",
+      "slogan": "Dress with purpose",
+      "materials": "100% Organic Linen-Tencel Blend",
+      "care": "Hand wash cold. Lay flat to dry in shade.",
+      "images": [
+        "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Oatmeal Beige",
+        "Pristine White",
+        "Espresso Dark"
+      ],
+      "inStock": true,
+      "fitType": "slim",
+      "isTrending": true
+    },
+    {
+      "id": "p16",
+      "name": "Veda Sculptural Wine Corset Top",
+      "category": "tops",
+      "price": 1899,
+      "originalPrice": 2599,
+      "description": "A sculptural sleeveless top in deep burgundy-wine crepe, featuring an asymmetric diagonal high-neck collar secured with heavy-weight custom gold pebble buttons.",
+      "slogan": "Dress with purpose",
+      "materials": "85% Fine Organic Crepe, 15% Recycled Tencel",
+      "care": "Dry clean only. Delicate cycle steam iron.",
+      "images": [
+        "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Mulberry Wine",
+        "Classic Obsidian",
+        "Emerald Green"
+      ],
+      "inStock": true,
+      "fitType": "slim",
+      "isTrending": true
+    },
+    {
+      "id": "p17",
+      "name": "Savitri Asymmetric Olive Drape Top",
+      "category": "tops",
+      "price": 1799,
+      "originalPrice": 2400,
+      "description": "A beautiful draped high-neck vest in olive green tailored crepe, styled with an asymmetric buttoned fold, single signature silver statement button, and cascading side flounce.",
+      "slogan": "Dress with purpose",
+      "materials": "100% Premium Eco-Certified Satin Crepe",
+      "care": "Gentle hand wash cold. Light steam recommended.",
+      "images": [
+        "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Olive Garden",
+        "Saffron Clay",
+        "Chalk Offwhite"
+      ],
+      "inStock": true,
+      "fitType": "regular",
+      "isTrending": true
+    },
+    {
+      "id": "p18",
+      "name": "Aanya Lace-Up Burgundy Waistcoat",
+      "category": "tops",
+      "price": 1699,
+      "originalPrice": 2299,
+      "description": "A chic structured vest in a rich wine-crimson weave, featuring a tailored buttoned bodice, deep V-neck, and adjustable side corset lace-up details.",
+      "slogan": "Dress with purpose",
+      "materials": "100% GOTS Certified Organic Cotton & Linen Canvas",
+      "care": "Machine wash cold inside-out on gentle. Dry flat.",
+      "images": [
+        "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Wine Crimson",
+        "Espresso Black",
+        "Classic Taupe"
+      ],
+      "inStock": true,
+      "fitType": "slim",
+      "isTrending": false
+    },
+    {
+      "id": "p19",
+      "name": "Sia Boatneck Yellow Wrap Top",
+      "category": "tops",
+      "price": 1599,
+      "originalPrice": 2199,
+      "description": "An exquisite pastel yellow wrap top in organic tencel, featuring a clean boat-neck collar, diagonal side pleating, and a delicate side tie secured with decorative wooden hanging beads.",
+      "slogan": "Dress with purpose",
+      "materials": "100% Eco-Spun Bamboo Tencel",
+      "care": "Hand wash cold with mild detergent. Do not bleach or tumble dry.",
+      "images": [
+        "https://images.unsplash.com/photo-1509319117193-57bab727e09d?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Lemon Sorbet",
+        "Vanilla Cream",
+        "Sky Powder Blue"
+      ],
+      "inStock": true,
+      "fitType": "regular",
+      "isTrending": true
+    },
+    {
+      "id": "p1",
+      "name": "Elysian Linen Blazer",
+      "category": "blazers",
+      "price": 2499,
+      "originalPrice": 3499,
+      "description": "A structural, eco-friendly linen blazer tailored with a relaxed waist, soft shoulder draping, and double-breasted closure. Part of our purposeful signature collection.",
+      "slogan": "Dress with purpose",
+      "materials": "100% Eco-Certified Organic Linen",
+      "care": "Dry clean or gentle hand wash in cold water with mild detergent. Lay flat to dry.",
+      "images": [
+        "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Champagne",
+        "Chalk White",
+        "Obsidian Black"
+      ],
+      "inStock": true,
+      "fitType": "slim",
+      "isTrending": true
+    },
+    {
+      "id": "p2",
+      "name": "Aura Silk Cowl Dress",
+      "category": "dresses",
+      "price": 3299,
+      "originalPrice": 4299,
+      "description": "An elegant bias-cut midi dress made of heavy-weight satin-silk, featuring an architectural cowl neckline and an adjustable back tie. Sophisticated evening silhouette.",
+      "slogan": "Dress with purpose",
+      "materials": "100% Organic Pure Mulberry Silk",
+      "care": "Dry clean only. Iron on lowest setting with a pressing cloth.",
+      "images": [
+        "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Mulberry Burgundy",
+        "Classic Champagne",
+        "Emerald Night"
+      ],
+      "inStock": true,
+      "fitType": "slim",
+      "isTrending": true
+    },
+    {
+      "id": "p3",
+      "name": "Sanskrit Knit Co-ord Set",
+      "category": "co-ords",
+      "price": 2899,
+      "originalPrice": 3599,
+      "description": "A premium, ultra-soft ribbed knit ensemble. Features a wide-neck relaxed tunic and fluid, wide-leg trousers. Unparalleled style meets luxury lounger comfort.",
+      "slogan": "Dress with purpose",
+      "materials": "80% Organic Bamboo Cotton, 20% Recycled Fine Viscose",
+      "care": "Hand wash cold. Dry flat in shade. Do not hang-dry to preserve knit shape.",
+      "images": [
+        "https://images.unsplash.com/photo-1509319117193-57bab727e09d?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Oatmeal Heather",
+        "Warm Taupe",
+        "Charcoal Clay"
+      ],
+      "inStock": true,
+      "fitType": "regular",
+      "isTrending": false
+    },
+    {
+      "id": "p4",
+      "name": "Flora Architectural Pleated Trousers",
+      "category": "trousers",
+      "price": 1899,
+      "originalPrice": 2499,
+      "description": "High-waisted draped trousers engineered with structural front pleats, hidden side pockets, and premium internal waistband adjusters. Ideal for modern professional transitions.",
+      "slogan": "Dress with purpose",
+      "materials": "100% Recycled Tencel Modal Satin",
+      "care": "Gentle machine wash inside out. Warm iron or steam.",
+      "images": [
+        "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Earthy Sage",
+        "Desert Sand",
+        "Midnight Charcoal"
+      ],
+      "inStock": true,
+      "fitType": "regular",
+      "isTrending": true
+    },
+    {
+      "id": "p5",
+      "name": "Mothers Heritage Cotton Shirt",
+      "category": "tops",
+      "price": 1499,
+      "originalPrice": 1999,
+      "description": "An oversized, crispy poplin shirt crafted with drop shoulders and tailored cuffs. Dedicated to the stories of textile creativity woven by Smita’s mother.",
+      "slogan": "Dress with purpose",
+      "materials": "100% GOTS Certified Long-Staple Egyptian Cotton",
+      "care": "Machine wash warm. Warm iron while slightly damp for that luxury hotel look.",
+      "images": [
+        "https://images.unsplash.com/photo-1607345366928-199ea26cfe3e?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Pristine White",
+        "Heritage Indigo Striped",
+        "Blush Rose"
+      ],
+      "inStock": true,
+      "fitType": "oversized",
+      "isTrending": false
+    },
+    {
+      "id": "p6",
+      "name": "Amara Resort Wrap Dress",
+      "category": "vacation",
+      "price": 2199,
+      "originalPrice": 2999,
+      "description": "An asymmetrical wrap dress styled with cascading linen-silk tiers and waist ties. Offers breezy, feminine elegance designed to flatter different body structures.",
+      "slogan": "Dress with purpose",
+      "materials": "70% Organic Bengal Khadi, 30% Fine Mulberry Silk",
+      "care": "Gentle hand wash. Hang dry in shade. Light steam recommended.",
+      "images": [
+        "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Saffron Clay",
+        "Chalk Offwhite",
+        "Olive Garden"
+      ],
+      "inStock": true,
+      "fitType": "regular",
+      "isTrending": true
+    },
+    {
+      "id": "p7",
+      "name": "Prana Ribbed Mockneck Top",
+      "category": "tops",
+      "price": 999,
+      "originalPrice": 1499,
+      "description": "A sleek, mock-neck layering essential tailored in premium ribbed bamboo. Soft, moisture-wicking and sustainably resilient.",
+      "slogan": "Dress with purpose",
+      "materials": "95% Organic Bamboo Rib Knit, 5% Lycra",
+      "care": "Machine wash cold on delicate cycle. Warm iron.",
+      "images": [
+        "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Vanilla Cream",
+        "Espresso Dark",
+        "Classic Sage"
+      ],
+      "inStock": true,
+      "fitType": "slim",
+      "isTrending": false
+    },
+    {
+      "id": "p8",
+      "name": "Empower Cupro Satin Trench",
+      "category": "blazers",
+      "price": 3999,
+      "originalPrice": 4999,
+      "description": "A beautiful draped luxury duster blazer styled with deep trench lapels, hidden seams, and functional sash. Perfect for office-to-dinner layering.",
+      "slogan": "Dress with purpose",
+      "materials": "100% Eco-Upcycled Cupro Satin",
+      "care": "Dry clean only. Steam iron.",
+      "images": [
+        "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Espresso Bronze",
+        "Sandstorm Khaki",
+        "Classic Obsidian"
+      ],
+      "inStock": true,
+      "fitType": "oversized",
+      "isTrending": true
+    },
+    {
+      "id": "p9",
+      "name": "Ananya Versatile Wrap Tunic",
+      "category": "tops",
+      "price": 1699,
+      "originalPrice": 2299,
+      "description": "Tailored wrap waist with elegant asymmetric neck drape. Crisp enough for a board meeting, fluid enough for college lectures, cozy for home lounging, and styles beautifully with heavy jewelry for evening parties.",
+      "slogan": "Dress with purpose",
+      "materials": "100% Organic Bamboo Cotton Blend",
+      "care": "Machine wash cold on delicate cycle. Low steam iron.",
+      "images": [
+        "https://images.unsplash.com/photo-1534126511673-b6899657816a?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Oatmeal",
+        "Espresso Dark",
+        "Olive Garden"
+      ],
+      "inStock": true,
+      "fitType": "regular",
+      "isTrending": true
+    },
+    {
+      "id": "p10",
+      "name": "Symmetry Knit Polo Dress",
+      "category": "dresses",
+      "price": 2999,
+      "originalPrice": 3899,
+      "description": "Sophisticated ribbed collar dress with premium weight drape. Styles effortlessly with a blazer for office, sneakers for college, bare feet for home, and statement heels for a night out.",
+      "slogan": "Dress with purpose",
+      "materials": "85% Recycled Lenzing Modal, 15% Fine Spandex",
+      "care": "Dry flat in shade. Do not twist or wring.",
+      "images": [
+        "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1495385794356-15371f548e31?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Emerald Night",
+        "Chalk Offwhite",
+        "Obsidian Black"
+      ],
+      "inStock": true,
+      "fitType": "slim",
+      "isTrending": true
+    },
+    {
+      "id": "p11",
+      "name": "Metropolitan Cotton Shacket",
+      "category": "blazers",
+      "price": 2199,
+      "originalPrice": 2899,
+      "description": "The ultimate transition piece. Wear it buttoned as a clean professional shirt in the office, layered open with a crop top for a college look, or loose and comfy for home relaxation.",
+      "slogan": "Dress with purpose",
+      "materials": "100% GOTS Certified Long-Staple Cotton",
+      "care": "Machine wash warm. Warm iron while slightly damp.",
+      "images": [
+        "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Desert Sand",
+        "Heritage Indigo Striped",
+        "Pristine White"
+      ],
+      "inStock": true,
+      "fitType": "oversized",
+      "isTrending": false
+    },
+    {
+      "id": "p12",
+      "name": "Infinite Drape Palazzo Pant",
+      "category": "trousers",
+      "price": 1999,
+      "originalPrice": 2599,
+      "description": "Engineered with a high-rise front pleat and an elastic-back waistband. Absolute comfort for home-working, sharp professional tailoring for the office, and breezy, fluid elegance for parties.",
+      "slogan": "Dress with purpose",
+      "materials": "100% Eco-Certified Organic Tencel",
+      "care": "Gentle hand wash. Hang dry in shade.",
+      "images": [
+        "https://images.unsplash.com/photo-1509551388413-e18d0ac5d495?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Classic Obsidian",
+        "Warm Taupe",
+        "Vanilla Cream"
+      ],
+      "inStock": true,
+      "fitType": "regular",
+      "isTrending": true
+    },
+    {
+      "id": "p13",
+      "name": "Nomad Linen Utility Shirt-Dress",
+      "category": "dresses",
+      "price": 2599,
+      "originalPrice": 3399,
+      "description": "Features a double-pocket utility design and detachable belt. Wear it tailored for work, unbelted as a loose home kimono, or belted with high boots for dinner parties.",
+      "slogan": "Dress with purpose",
+      "materials": "100% Eco-Certified Organic Linen",
+      "care": "Dry clean or gentle hand wash. Warm iron or steam.",
+      "images": [
+        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&q=80&w=800"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Oatmeal Heather",
+        "Olive Garden",
+        "Saffron Clay"
+      ],
+      "inStock": true,
+      "fitType": "regular",
+      "isTrending": true
+    }
+  ],
+  "charities": [
+    {
+      "id": "c1",
+      "name": "Dignity Old Age Homes",
+      "description": "Providing food, healthcare, and comfortable shelters to homeless and neglected senior citizens.",
+      "image": "https://images.unsplash.com/photo-1581579438747-1dc8d1e0ca96?auto=format&fit=crop&q=80&w=400",
+      "totalDonated": 42350,
+      "impactLabel": "Shelter days provided"
+    },
+    {
+      "id": "c2",
+      "name": "Voice of Animals Foundation",
+      "description": "Funding medical aid, rescue ambulances, and food drives for injured stray and community animals.",
+      "image": "https://images.unsplash.com/photo-1548767797-d8c844163c4c?auto=format&fit=crop&q=80&w=400",
+      "totalDonated": 38200,
+      "impactLabel": "Animals fed & treated"
+    },
+    {
+      "id": "c3",
+      "name": "Yuva Orphans Trust",
+      "description": "Empowering children with school scholarships, digital classrooms, and loving foster care.",
+      "image": "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=400",
+      "totalDonated": 51200,
+      "impactLabel": "Education sponsors logged"
+    },
+    {
+      "id": "c4",
+      "name": "Enable India (Disabled Care)",
+      "description": "Sponsoring prosthetic limbs, custom assistive tech, and vocational training for differently-abled women.",
+      "image": "https://images.unsplash.com/photo-1534761049852-325012285213?auto=format&fit=crop&q=80&w=400",
+      "totalDonated": 45700,
+      "impactLabel": "Vocational kits distributed"
+    }
+  ],
+  "donationLogs": [
+    {
+      "id": "dl1",
+      "donorName": "Smita Sharma",
+      "donorEmail": "smita.sharma@vividhra.com",
+      "amount": 5000,
+      "targetCharities": [
+        "c3"
+      ],
+      "timestamp": "2026-06-25T12:00:00.000Z"
+    },
+    {
+      "id": "dl2",
+      "donorName": "Aditi Rao",
+      "donorEmail": "aditi@yahoo.com",
+      "amount": 1500,
+      "targetCharities": [
+        "c1",
+        "c2"
+      ],
+      "timestamp": "2026-06-26T14:30:00.000Z"
+    }
+  ],
+  "orders": [
+    {
+      "id": "VIV-94827",
+      "customerEmail": "guest@vividhra.com",
+      "customerName": "Aishwarya Sen",
+      "items": [
+        {
+          "id": "ci1",
+          "productId": "p1",
+          "productName": "Elysian Linen Blazer",
+          "price": 2499,
+          "image": "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&q=80&w=200",
+          "size": "M",
+          "color": "Chalk White",
+          "quantity": 1
+        }
+      ],
+      "subtotal": 2499,
+      "donationAmount": 500,
+      "total": 2999,
+      "status": "processing",
+      "createdAt": "2026-06-26T10:15:00.000Z",
+      "address": "Floor 12, Sunrise Towers, Cuffe Parade",
+      "city": "Mumbai"
+    }
+  ],
+  "users": {
+    "guest-uid": {
+      "uid": "guest-uid",
+      "email": "guest@vividhra.com",
+      "displayName": "Smita Guest",
+      "role": "customer",
+      "fitProfile": {
+        "height": 165,
+        "bodyType": "hourglass",
+        "shoulderStructure": "average",
+        "bustFitPreference": "comfort",
+        "waistFitPreference": "snug",
+        "hipFitPreference": "comfort",
+        "fitStyle": "classic",
+        "comfortPreference": "high",
+        "preferredLengths": "Midi, Ankle Length",
+        "sleevePreference": "full",
+        "modestyPreference": "medium",
+        "outfitMood": "elegant",
+        "occasionPreference": "office"
+      },
+      "wishlist": [],
+      "cart": []
+    }
+  }
+}

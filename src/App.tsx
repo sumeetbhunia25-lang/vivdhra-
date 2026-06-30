@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useScroll, useSpring } from 'motion/react';
+import gsap from 'gsap';
 import {
   ShoppingBag,
   Heart,
@@ -24,7 +25,12 @@ import {
   DollarSign,
   Mail,
   Send,
-  Check
+  Check,
+  Phone,
+  CreditCard,
+  Ticket,
+  Clock,
+  Trash2
 } from 'lucide-react';
 import { Product, CartItem, WishlistItem, Order, DonationTarget, DonationLog, FitProfile, UserAccount } from './types';
 import Header from './components/Header';
@@ -37,12 +43,22 @@ import AdminPanel from './components/AdminPanel';
 import StoryPage from './components/StoryPage';
 import ZaraOpeningIntro from './components/ZaraOpeningIntro';
 import AISilhouetteStudio from './components/AISilhouetteStudio';
+import PremiumHero from './components/PremiumHero';
+import OrderJourneyTracker from './components/OrderJourneyTracker';
 
 export default function App() {
+  // Scroll progress for Home & Story view
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
   // Navigation & Core views
   const [showIntro, setShowIntro] = useState(true);
-  const [activeView, setActiveView] = useState<'home' | 'story' | 'donations' | 'profile' | 'admin' | 'shop'>('home');
-  const [profileSubTab, setProfileSubTab] = useState<'ai-silhouette' | 'profile-form'>('ai-silhouette');
+  const [activeView, setActiveView] = useState<'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop'>('home');
+  const [profileSubTab, setProfileSubTab] = useState<'ai-silhouette' | 'profile-form' | 'order-tracking'>('ai-silhouette');
   const [user, setUser] = useState<UserAccount | null>({
     id: 'user_1',
     name: 'Ananya Iyer',
@@ -96,6 +112,25 @@ export default function App() {
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState('');
 
+  // Patron Authentication states
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authRole, setAuthRole] = useState<'customer' | 'admin'>('customer');
+  const [authError, setAuthError] = useState('');
+  const [authSuccess, setAuthSuccess] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+
+  // Launch-ready premium enhancements
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; discountPercent: number } | null>(null);
+  const [promoError, setPromoError] = useState('');
+  const [giftWrapping, setGiftWrapping] = useState(false);
+  const [checkoutPhone, setCheckoutPhone] = useState('');
+  const [checkoutNotes, setCheckoutNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'card' | 'cod'>('upi');
+
   // States to preserve details for the simulated email order receipt
   const [lastOrderItems, setLastOrderItems] = useState<any[]>([]);
   const [lastOrderSubtotal, setLastOrderSubtotal] = useState(0);
@@ -106,8 +141,114 @@ export default function App() {
   const [lastOrderName, setLastOrderName] = useState('');
   const [lastOrderAddress, setLastOrderAddress] = useState('');
   const [lastOrderCity, setLastOrderCity] = useState('');
+  const [lastOrderPromoDiscount, setLastOrderPromoDiscount] = useState(0);
+  const [lastOrderShippingFee, setLastOrderShippingFee] = useState(0);
+  const [lastOrderGiftWrapping, setLastOrderGiftWrapping] = useState(false);
+  const [lastOrderPhone, setLastOrderPhone] = useState('');
+  const [lastOrderNotes, setLastOrderNotes] = useState('');
+  const [lastOrderPaymentMethod, setLastOrderPaymentMethod] = useState<'upi' | 'card' | 'cod'>('upi');
   const [isEmailResending, setIsEmailResending] = useState(false);
   const [emailResentSuccess, setEmailResentSuccess] = useState(false);
+
+  // Recent Searches state and persistence
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('vividhra_recent_searches');
+      return saved ? JSON.parse(saved) : ['Linen', 'Silk', 'Co-ord', 'Kurta', 'Handloom'];
+    } catch {
+      return ['Linen', 'Silk', 'Co-ord', 'Kurta', 'Handloom'];
+    }
+  });
+
+  const addRecentSearch = (query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    setRecentSearches(prev => {
+      const filtered = prev.filter(q => q.toLowerCase() !== trimmed.toLowerCase());
+      const updated = [trimmed, ...filtered].slice(0, 8);
+      try {
+        localStorage.setItem('vividhra_recent_searches', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+  };
+
+  const removeRecentSearch = (query: string) => {
+    setRecentSearches(prev => {
+      const updated = prev.filter(q => q !== query);
+      try {
+        localStorage.setItem('vividhra_recent_searches', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+  };
+
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+    try {
+      localStorage.removeItem('vividhra_recent_searches');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const productGridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!productGridRef.current) return;
+
+    let isIntersecting = false;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            isIntersecting = true;
+            animateCards();
+          } else {
+            isIntersecting = false;
+          }
+        });
+      },
+      { threshold: 0.05, rootMargin: '0px 0px -10% 0px' }
+    );
+
+    const animateCards = () => {
+      if (!productGridRef.current) return;
+      const cards = productGridRef.current.querySelectorAll('.gsap-product-card');
+      if (cards.length > 0) {
+        gsap.killTweensOf(cards);
+        gsap.fromTo(
+          cards,
+          { opacity: 0, y: 50 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.85,
+            stagger: 0.1,
+            ease: 'power3.out',
+            overwrite: 'auto'
+          }
+        );
+      }
+    };
+
+    observer.observe(productGridRef.current);
+
+    // Trigger on mount or products change
+    const delay = setTimeout(() => {
+      animateCards();
+    }, 100);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(delay);
+    };
+  }, [products, selectedCategory, searchQuery]);
 
   // Fetch full-stack database states
   const loadData = async () => {
@@ -137,21 +278,107 @@ export default function App() {
     loadData();
   }, []);
 
+  const fetchAndSetProfile = async (uid?: string) => {
+    try {
+      const savedUid = uid || localStorage.getItem('vividhra_user_uid');
+      const url = savedUid ? `/api/user/profile?uid=${savedUid}` : '/api/user/profile';
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.email) {
+        setUser(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // Fetch user profile
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await fetch('/api/user/profile');
-        const data = await res.json();
-        if (data.email) {
-          setUser(data);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchProfile();
+    fetchAndSetProfile();
   }, []);
+
+  // Patron Registration Handler
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
+    if (!authEmail || !authPassword) {
+      setAuthError('Email and password are required.');
+      return;
+    }
+    setIsAuthLoading(true);
+    try {
+      const res = await fetch('/api/user/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: authEmail,
+          password: authPassword,
+          name: authName,
+          role: authRole
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAuthSuccess('Welcome to VIVIDHRA! Your patron profile was created successfully.');
+        localStorage.setItem('vividhra_user_uid', data.uid);
+        setUser(data);
+        // Clear input credentials
+        setAuthPassword('');
+        setAuthName('');
+      } else {
+        setAuthError(data.error || 'Registration failed. Please try again.');
+      }
+    } catch (err) {
+      console.error(err);
+      setAuthError('Network error. Failed to reach server.');
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  // Patron Login Handler
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
+    if (!authEmail || !authPassword) {
+      setAuthError('Email and password are required.');
+      return;
+    }
+    setIsAuthLoading(true);
+    try {
+      const res = await fetch('/api/user/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: authEmail, password: authPassword }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAuthSuccess('Sign in successful. Welcome back!');
+        localStorage.setItem('vividhra_user_uid', data.uid);
+        setUser(data);
+        // Clear sensitive inputs
+        setAuthPassword('');
+      } else {
+        setAuthError(data.error || 'Invalid credentials. Please verify your details.');
+      }
+    } catch (err) {
+      console.error(err);
+      setAuthError('Network error. Failed to reach server.');
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  // Patron Logout Handler
+  const handleLogout = () => {
+    localStorage.removeItem('vividhra_user_uid');
+    setAuthSuccess('');
+    setAuthError('');
+    // Reload default guest profile from backend
+    fetchAndSetProfile('guest-uid');
+  };
 
   // Add Item to cart
   const handleAddToCart = (product: Product, size: 'XS' | 'S' | 'M' | 'L' | 'XL', color: string) => {
@@ -249,9 +476,41 @@ export default function App() {
 
   // Calculations for Checkout
   const cartSubtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const nextHundredValue = Math.ceil((cartSubtotal + 10) / 100) * 100;
-  const computedRoundUp = isRoundUpEnabled && cartSubtotal > 0 ? (nextHundredValue - cartSubtotal) : 0;
-  const checkoutTotal = cartSubtotal + computedRoundUp;
+  
+  // Promo code validation and discount calculation
+  const promoDiscount = appliedPromo ? Math.round(cartSubtotal * (appliedPromo.discountPercent / 100)) : 0;
+  const discountedSubtotal = Math.max(0, cartSubtotal - promoDiscount);
+  
+  // Free Shipping Threshold of ₹5000: if subtotal is > 0 and < ₹5000, charge ₹150 flat shipping
+  const shippingFee = cartSubtotal > 0 && discountedSubtotal < 5000 ? 150 : 0;
+  
+  const nextHundredValue = Math.ceil((discountedSubtotal + shippingFee + 10) / 100) * 100;
+  const computedRoundUp = isRoundUpEnabled && cartSubtotal > 0 ? (nextHundredValue - (discountedSubtotal + shippingFee)) : 0;
+  const checkoutTotal = discountedSubtotal + shippingFee + computedRoundUp;
+
+  // Handle Promo Code Submission
+  const handleApplyPromo = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPromoError('');
+    const code = promoCode.trim().toUpperCase();
+    if (!code) return;
+
+    if (code === 'WELCOME10') {
+      setAppliedPromo({ code: 'WELCOME10', discountPercent: 10 });
+    } else if (code === 'LAUNCH20') {
+      setAppliedPromo({ code: 'LAUNCH20', discountPercent: 20 });
+    } else if (code === 'DIRECTSUPPORT') {
+      setAppliedPromo({ code: 'DIRECTSUPPORT', discountPercent: 15 });
+    } else {
+      setPromoError('Invalid coupon code. Try WELCOME10 or LAUNCH20.');
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setPromoCode('');
+    setPromoError('');
+  };
 
   // Perform Checkout purchase
   const handlePlaceOrder = async (e: React.FormEvent) => {
@@ -267,6 +526,10 @@ export default function App() {
         customerEmail: checkoutEmail,
         address: checkoutAddress,
         city: checkoutCity,
+        phone: checkoutPhone,
+        notes: checkoutNotes,
+        paymentMethod: paymentMethod,
+        giftWrapping: giftWrapping,
         items: cart.map((c) => ({
           productId: c.product.id,
           quantity: c.quantity,
@@ -274,6 +537,9 @@ export default function App() {
           selectedColor: c.color,
         })),
         subtotal: cartSubtotal,
+        promoDiscount: promoDiscount,
+        promoCode: appliedPromo ? appliedPromo.code : null,
+        shippingFee: shippingFee,
         donationAmount: computedRoundUp,
         donationCharities: isRoundUpEnabled ? checkoutCharities : [],
         total: checkoutTotal,
@@ -290,6 +556,12 @@ export default function App() {
       // Store checkout parameters for the simulated email order receipt
       setLastOrderItems([...cart]);
       setLastOrderSubtotal(cartSubtotal);
+      setLastOrderPromoDiscount(promoDiscount);
+      setLastOrderShippingFee(shippingFee);
+      setLastOrderGiftWrapping(giftWrapping);
+      setLastOrderPhone(checkoutPhone);
+      setLastOrderNotes(checkoutNotes);
+      setLastOrderPaymentMethod(paymentMethod);
       setLastOrderRoundUp(computedRoundUp);
       setLastOrderTotal(checkoutTotal);
       setLastOrderCharities(isRoundUpEnabled ? [...checkoutCharities] : []);
@@ -301,7 +573,14 @@ export default function App() {
       
       setPlacedOrderId(data.orderId || Math.floor(1000 + Math.random() * 9000).toString());
       setCheckoutSuccess(true);
-      setCart([]); // Clear Cart
+      
+      // Clear Cart and Checkout Form variables
+      setCart([]);
+      setPromoCode('');
+      setAppliedPromo(null);
+      setGiftWrapping(false);
+      setCheckoutPhone('');
+      setCheckoutNotes('');
       await loadData(); // Reload pools and counts
     } catch (err) {
       console.error(err);
@@ -339,6 +618,12 @@ export default function App() {
       </AnimatePresence>
 
       {/* 1. Transparent/Frosted Sticky Header */}
+      {(activeView === 'home' || activeView === 'story') && (
+        <motion.div
+          className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#dfba73] via-[#c2a46c] to-[#8d6f34] origin-left"
+          style={{ scaleX, zIndex: 100 }}
+        />
+      )}
       <Header
         cart={cart}
         wishlist={wishlist}
@@ -365,71 +650,23 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="space-y-10 pt-24 md:pt-28 pb-16"
+              className="space-y-10 pb-16"
             >
               
-              {/* Cinematic Hero Segment (Structured Bento Box) */}
-              <section className="mx-4 md:mx-10 relative h-[80vh] flex items-center justify-center bg-stone-900 overflow-hidden rounded-3xl border border-gray-200/50 shadow-xs">
-                <div className="absolute inset-0 bg-black/35 z-10" />
-                <img
-                  src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=2000"
-                  alt="Vividhra luxury editorial"
-                  referrerPolicy="no-referrer"
-                  className="absolute inset-0 w-full h-full object-cover object-center scale-100 hover:scale-[1.02] transition-transform duration-[4000ms]"
-                />
-                
-                <div className="relative z-20 text-center text-white max-w-4xl px-4 space-y-6 flex flex-col items-center">
-                  <span className="text-xs uppercase tracking-[0.45em] text-[#c2a46c] font-outfit font-semibold animate-pulse">
-                    Women Exclusive &bull; Sustainable Couture
-                  </span>
-                  
-                  <h1 className="serif-header text-5xl sm:text-7xl md:text-8xl font-normal tracking-[-0.09em] leading-none text-white uppercase max-w-3xl drop-shadow-md">
-                    VIVIDHRA
-                  </h1>
-                  
-                  <p className="text-xs sm:text-sm tracking-[0.3em] uppercase text-stone-200 font-light font-outfit">
-                    Slogan: Dress with purpose &bull; Versatile Tailoring
-                  </p>
-
-                  <div className="pt-6 flex flex-col sm:flex-row items-center gap-4">
-                    <button
-                      onClick={() => {
-                        const listSec = document.getElementById('collection-grid');
-                        listSec?.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className="px-8 py-3.5 bg-white text-stone-900 text-xs uppercase tracking-widest font-outfit font-semibold hover:bg-[#1c1917] hover:text-white transition-all rounded-md shadow-lg cursor-pointer flex items-center space-x-2 group"
-                    >
-                      <span>Browse Collection</span>
-                      <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1.5 transition-transform" />
-                    </button>
-                    
-                    <button
-                      onClick={() => setActiveView('story')}
-                      className="px-8 py-3.5 bg-white/10 backdrop-blur-md text-white text-xs uppercase tracking-widest font-outfit font-semibold hover:bg-white/20 transition-all rounded-md border border-white/20 cursor-pointer"
-                    >
-                      Our Philosophy
-                    </button>
-                  </div>
-                </div>
-
-                {/* Quick Trust Anchor Rail (Anti-AI-Slop, Humble details) */}
-                <div className="absolute bottom-6 left-0 right-0 z-20 hidden md:flex justify-center">
-                  <div className="bg-black/40 backdrop-blur-md py-2.5 px-8 rounded-full border border-white/10 flex items-center space-x-8 text-[11px] font-mono tracking-wide text-stone-300">
-                    <span>Mumbai Atelier</span>
-                    <span className="text-[#c2a46c]">&bull;</span>
-                    <span>100% Organic Cotton &amp; Silk</span>
-                    <span className="text-[#c2a46c]">&bull;</span>
-                    <span>Sustainably Certified</span>
-                  </div>
-                </div>
-              </section>
+              <PremiumHero 
+                onBrowse={() => {
+                  const listSec = document.getElementById('collection-grid');
+                  listSec?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                onExplorePhilosophy={() => setActiveView('story')}
+              />
 
               {/* Custom Silhouette Exhibition Section */}
               <section className="mx-4 md:mx-10 bg-[#faf9f5] border border-[#e7e5e4] rounded-3xl p-6 md:p-10 shadow-sm space-y-8">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-[#e7e5e4]">
                   <div className="space-y-1.5">
                     <span className="inline-flex items-center space-x-1 text-[10px] uppercase tracking-wider text-[#c2a46c] font-mono bg-[#c2a46c]/10 px-3 py-1 rounded-full font-bold">
-                      <Sparkles className="w-3 h-3 mr-1 text-[#c2a46c]" /> New Release: Autumn/Winter Capsule
+                      <Sparkles className="w-3 h-3 mr-1 text-[#c2a46c]" /> New Release: Autumn/Winter Collection
                     </span>
                     <h2 className="serif-header text-2xl md:text-3xl font-bold text-stone-950">
                       The AI Stylist Silhouette Exhibition
@@ -554,7 +791,7 @@ export default function App() {
                     <p className="text-sm text-[#78716c] font-outfit">No garments found matching criteria.</p>
                   </div>
                 ) : (
-                  <div className="flex overflow-x-auto pb-6 gap-6 snap-x snap-mandatory scrollbar-none w-full">
+                  <div ref={productGridRef} className="flex overflow-x-auto pb-6 gap-6 snap-x snap-mandatory scrollbar-none w-full">
                     {filteredProducts.map((prod) => (
                       <ZaraStyleProductCard
                         key={prod.id}
@@ -563,7 +800,7 @@ export default function App() {
                         onWishlistToggle={handleToggleWishlist}
                         isWishlisted={wishlist.some((w) => w.product.id === prod.id)}
                         onQuickView={(p) => setSelectedProduct(p)}
-                        className="flex-none w-[315px] sm:w-[380px] md:w-[410px] lg:w-[440px] snap-start"
+                        className="flex-none w-[315px] sm:w-[380px] md:w-[410px] lg:w-[440px] snap-start gsap-product-card opacity-0"
                       />
                     ))}
                   </div>
@@ -586,10 +823,10 @@ export default function App() {
                   </p>
                   <div className="pt-2">
                     <button
-                      onClick={() => setActiveView('donations')}
+                      onClick={() => setActiveView('stylist')}
                       className="px-6 py-2.5 bg-[#1c1917] hover:bg-[#3c3734] text-white text-xs uppercase tracking-widest font-outfit font-medium rounded-lg transition-all cursor-pointer shadow-xs"
                     >
-                      View active donation pools
+                      Consult AI Styling Atelier
                     </button>
                   </div>
                 </div>
@@ -611,20 +848,34 @@ export default function App() {
             </motion.div>
           )}
 
-          {/* DONATION TRACKER VIEW */}
-          {activeView === 'donations' && (
+          {/* AI ATELIER STYLIST VIEW */}
+          {activeView === 'stylist' && (
             <motion.div
-              key="donations"
+              key="stylist"
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="pt-24 md:pt-32 pb-20 max-w-5xl mx-auto px-4 md:px-8 space-y-12"
             >
-              <DonationTrackerPage
-                charities={charities}
-                logs={donationLogs}
-                onDonate={handleDirectDonation}
-              />
+              <div className="text-center max-w-2xl mx-auto space-y-3">
+                <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-[#c2a46c] font-semibold bg-[#c2a46c]/10 px-3 py-1 rounded-full">
+                  Atelier Intelligent Guidance
+                </span>
+                <h1 className="serif-header text-2xl md:text-4xl font-bold text-[#1c1917]">
+                  VIVIDHRA AI Atelier Stylist
+                </h1>
+                <p className="text-xs md:text-sm text-[#78716c] font-light">
+                  Consult our intelligent stylist on sustainable fabric structures, silhouette matches for your fit profile, and co-ord curation guidelines.
+                </p>
+              </div>
+
+              <div className="h-[600px] max-w-3xl mx-auto shadow-xl rounded-2xl overflow-hidden bg-white">
+                <AIStylist
+                  fitProfile={user?.fitProfile}
+                  currentProduct={selectedProduct}
+                />
+              </div>
             </motion.div>
           )}
 
@@ -651,43 +902,267 @@ export default function App() {
               </div>
 
               {/* Settle admin/customer mock identity switcher */}
-              <div className="max-w-4xl mx-auto bg-stone-100 p-4 rounded-xl border border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="flex items-center space-x-3">
-                  <User className="w-5 h-5 text-stone-500" />
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-stone-900">{user?.name} ({user?.email})</p>
-                    <p className="text-[10px] text-stone-500 uppercase font-mono">Role: {user?.role}</p>
-                  </div>
-                </div>
+              {(() => {
+                const isRegisteredPatron = user && localStorage.getItem('vividhra_user_uid') === user.uid && user.email !== 'guest@vividhra.com';
+                
+                return !isRegisteredPatron ? (
+                  <div className="max-w-4xl mx-auto bg-[#faf9f6] border border-stone-200 rounded-2xl overflow-hidden shadow-sm grid grid-cols-1 md:grid-cols-5">
+                    {/* Left Side Banner */}
+                    <div className="col-span-2 bg-[#1c1917] p-8 text-white flex flex-col justify-between space-y-6 relative overflow-hidden">
+                      <div className="space-y-4 relative z-10">
+                        <span className="text-[9px] uppercase tracking-[0.2em] font-mono text-[#c2a46c] font-bold border border-[#c2a46c]/40 px-2.5 py-1 rounded-full bg-[#c2a46c]/10">
+                          Patron Sanctuary
+                        </span>
+                        <h2 className="serif-header text-xl md:text-2xl font-bold tracking-tight text-stone-100">
+                          VIVIDHRA Patron Portal
+                        </h2>
+                        <p className="text-[11px] text-stone-300 font-light leading-relaxed">
+                          Welcome to our textile sanctuary. Establish an authentic patron profile to securely store your digital silhouette profiles, customize material preferences, and preserve order histories across all your devices.
+                        </p>
+                      </div>
+                      <div className="pt-4 border-t border-stone-800 text-[10px] text-stone-400 font-mono relative z-10 text-left">
+                        <p className="font-serif italic text-[#c2a46c] text-[11px] mb-1">“Dress with purpose”</p>
+                        <p>Sanskrit heritage & sustainable tailoring.</p>
+                      </div>
+                      {/* Decorative pattern */}
+                      <div className="absolute -right-16 -bottom-16 w-32 h-32 bg-[#c2a46c]/10 rounded-full blur-2xl pointer-events-none" />
+                    </div>
 
-                <div className="flex items-center space-x-2">
-                  <span className="text-[10px] uppercase tracking-wider text-stone-500">Change role:</span>
-                  <button
-                    onClick={() => setUser(user ? { ...user, role: user.role === 'admin' ? 'customer' : 'admin' } : null)}
-                    className="px-3 py-1 bg-white hover:bg-stone-200 text-[10px] uppercase tracking-wider font-bold rounded-md border cursor-pointer"
-                  >
-                    Switch to {user?.role === 'admin' ? 'Customer' : 'Atelier Admin'}
-                  </button>
-                </div>
-              </div>
+                    {/* Right Side Controls */}
+                    <div className="col-span-3 p-8 space-y-6 bg-white">
+                      {/* Tab Toggles */}
+                      <div className="flex border-b border-stone-200 pb-1">
+                        <button
+                          onClick={() => {
+                            setAuthMode('login');
+                            setAuthError('');
+                            setAuthSuccess('');
+                          }}
+                          className={`pb-2.5 text-xs font-bold uppercase tracking-wider font-outfit mr-6 border-b-2 transition-all cursor-pointer ${
+                            authMode === 'login'
+                              ? 'border-[#1c1917] text-[#1c1917]'
+                              : 'border-transparent text-stone-400 hover:text-stone-700'
+                          }`}
+                        >
+                          Sign In
+                        </button>
+                        <button
+                          onClick={() => {
+                            setAuthMode('register');
+                            setAuthError('');
+                            setAuthSuccess('');
+                          }}
+                          className={`pb-2.5 text-xs font-bold uppercase tracking-wider font-outfit border-b-2 transition-all cursor-pointer ${
+                            authMode === 'register'
+                              ? 'border-[#1c1917] text-[#1c1917]'
+                              : 'border-transparent text-stone-400 hover:text-stone-700'
+                          }`}
+                        >
+                          Create Account
+                        </button>
+                      </div>
+
+                      {/* Alerts */}
+                      {authError && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg font-light leading-relaxed flex items-center space-x-2 text-left"
+                        >
+                          <span className="w-1.5 h-1.5 bg-red-600 rounded-full flex-shrink-0" />
+                          <span>{authError}</span>
+                        </motion.div>
+                      )}
+
+                      {authSuccess && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg font-light leading-relaxed flex items-center space-x-2 text-left"
+                        >
+                          <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full flex-shrink-0" />
+                          <span>{authSuccess}</span>
+                        </motion.div>
+                      )}
+
+                      {/* Form */}
+                      <form onSubmit={authMode === 'login' ? handleLogin : handleRegister} className="space-y-4 text-left">
+                        {authMode === 'register' && (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] uppercase tracking-wider font-mono text-stone-500 font-bold">
+                              Full Name
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={authName}
+                                onChange={(e) => setAuthName(e.target.value)}
+                                placeholder="Ananya Iyer"
+                                required
+                                className="w-full pl-9 pr-3 py-2 border border-stone-200 rounded-lg text-xs font-outfit focus:outline-hidden focus:border-[#1c1917] bg-stone-50/50"
+                              />
+                              <User className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-2.5" />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase tracking-wider font-mono text-stone-500 font-bold">
+                            Patron Email
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="email"
+                              value={authEmail}
+                              onChange={(e) => setAuthEmail(e.target.value)}
+                              placeholder="ananya@vividhra.com"
+                              required
+                              className="w-full pl-9 pr-3 py-2 border border-stone-200 rounded-lg text-xs font-outfit focus:outline-hidden focus:border-[#1c1917] bg-stone-50/50"
+                            />
+                            <Mail className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-2.5" />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase tracking-wider font-mono text-stone-500 font-bold">
+                            Security Password
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="password"
+                              value={authPassword}
+                              onChange={(e) => setAuthPassword(e.target.value)}
+                              placeholder="••••••••"
+                              required
+                              className="w-full pl-9 pr-3 py-2 border border-stone-200 rounded-lg text-xs font-outfit focus:outline-hidden focus:border-[#1c1917] bg-stone-50/50"
+                            />
+                            <Lock className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-2.5" />
+                          </div>
+                        </div>
+
+                        {authMode === 'register' && (
+                          <div className="space-y-2 pt-1">
+                            <span className="text-[10px] uppercase tracking-wider font-mono text-stone-500 font-bold block">
+                              Atelier Access Role
+                            </span>
+                            <div className="flex space-x-4">
+                              <label className="flex items-center space-x-2 text-xs font-outfit cursor-pointer text-stone-700">
+                                <input
+                                  type="radio"
+                                  name="authRole"
+                                  checked={authRole === 'customer'}
+                                  onChange={() => setAuthRole('customer')}
+                                  className="accent-[#1c1917]"
+                                />
+                                <span>Customer Patron</span>
+                              </label>
+                              <label className="flex items-center space-x-2 text-xs font-outfit cursor-pointer text-stone-700">
+                                <input
+                                  type="radio"
+                                  name="authRole"
+                                  checked={authRole === 'admin'}
+                                  onChange={() => setAuthRole('admin')}
+                                  className="accent-[#1c1917]"
+                                />
+                                <span>Atelier Admin</span>
+                              </label>
+                            </div>
+                          </div>
+                        )}
+
+                        <button
+                          type="submit"
+                          disabled={isAuthLoading}
+                          className="w-full py-2.5 bg-[#1c1917] hover:bg-[#3c3734] disabled:bg-stone-300 text-white text-xs uppercase tracking-widest font-outfit font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center space-x-2"
+                        >
+                          {isAuthLoading ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <>
+                              <span>{authMode === 'login' ? 'Authenticate Sanctuary' : 'Join the Atelier'}</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </>
+                          )}
+                        </button>
+
+                        <div className="text-center pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Quick fill with Guest demo
+                              setUser({
+                                uid: 'guest-uid',
+                                email: 'guest@vividhra.com',
+                                displayName: 'Demo Guest',
+                                role: 'customer',
+                                wishlist: [],
+                                cart: []
+                              });
+                            }}
+                            className="text-[10px] text-stone-400 hover:text-stone-600 underline font-mono cursor-pointer"
+                          >
+                            Continue exploring as Guest Patron
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="max-w-4xl mx-auto bg-[#fbfbfa] p-6 rounded-2xl border border-stone-200 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xs text-left">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 rounded-full bg-[#1c1917] flex items-center justify-center text-[#c2a46c] shadow-xs">
+                        <User className="w-6 h-6" />
+                      </div>
+                      <div className="text-left space-y-0.5">
+                        <span className="text-[9px] uppercase tracking-widest font-mono text-[#c2a46c] font-bold">
+                          Authenticated Patron
+                        </span>
+                        <p className="text-sm font-bold text-stone-900">{user?.name || user?.displayName}</p>
+                        <p className="text-xs text-stone-500 font-outfit leading-none">{user?.email}</p>
+                        <p className="text-[10px] text-stone-400 font-mono uppercase pt-1">Role: {user?.role}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center space-x-2 border-r border-stone-200 pr-4 mr-1">
+                        <span className="text-[10px] uppercase tracking-wider text-stone-500">Quick role switch:</span>
+                        <button
+                          onClick={() => setUser(user ? { ...user, role: user.role === 'admin' ? 'customer' : 'admin' } : null)}
+                          className="px-3 py-1 bg-white hover:bg-stone-100 text-[10px] uppercase tracking-wider font-bold rounded-md border cursor-pointer transition-all"
+                        >
+                          {user?.role === 'admin' ? 'Be Customer' : 'Be Admin'}
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={handleLogout}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-[10px] uppercase tracking-widest font-bold rounded-lg transition-all cursor-pointer shadow-xs flex items-center space-x-1.5"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>Log Out</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Sub tab Selector */}
-              <div className="flex justify-center max-w-md mx-auto">
+              <div className="flex justify-center max-w-xl mx-auto">
                 <div className="flex bg-[#fafaf9] border border-stone-200 p-1 rounded-xl w-full">
                   <button
                     onClick={() => setProfileSubTab('ai-silhouette')}
-                    className={`flex-1 py-2.5 rounded-lg text-xs uppercase tracking-widest font-outfit font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
+                    className={`flex-1 py-2.5 rounded-lg text-[10px] md:text-xs uppercase tracking-wider md:tracking-widest font-outfit font-bold transition-all cursor-pointer flex items-center justify-center space-x-1 md:space-x-1.5 ${
                       profileSubTab === 'ai-silhouette'
                         ? 'bg-[#1c1917] text-white shadow-xs'
                         : 'text-stone-500 hover:text-stone-900'
                     }`}
                   >
                     <Sparkles className="w-3.5 h-3.5 text-[#c2a46c]" />
-                    <span>AI Silhouette Studio</span>
+                    <span>AI Silhouette</span>
                   </button>
                   <button
                     onClick={() => setProfileSubTab('profile-form')}
-                    className={`flex-1 py-2.5 rounded-lg text-xs uppercase tracking-widest font-outfit font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
+                    className={`flex-1 py-2.5 rounded-lg text-[10px] md:text-xs uppercase tracking-wider md:tracking-widest font-outfit font-bold transition-all cursor-pointer flex items-center justify-center space-x-1 md:space-x-1.5 ${
                       profileSubTab === 'profile-form'
                         ? 'bg-[#1c1917] text-white shadow-xs'
                         : 'text-stone-500 hover:text-stone-900'
@@ -696,11 +1171,22 @@ export default function App() {
                     <User className="w-3.5 h-3.5" />
                     <span>Sizing Portfolio</span>
                   </button>
+                  <button
+                    onClick={() => setProfileSubTab('order-tracking')}
+                    className={`flex-1 py-2.5 rounded-lg text-[10px] md:text-xs uppercase tracking-wider md:tracking-widest font-outfit font-bold transition-all cursor-pointer flex items-center justify-center space-x-1 md:space-x-1.5 ${
+                      profileSubTab === 'order-tracking'
+                        ? 'bg-[#1c1917] text-white shadow-xs'
+                        : 'text-stone-500 hover:text-stone-900'
+                    }`}
+                  >
+                    <Package className="w-3.5 h-3.5 text-[#c2a46c]" />
+                    <span>Track Order</span>
+                  </button>
                 </div>
               </div>
 
               <AnimatePresence mode="wait">
-                {profileSubTab === 'ai-silhouette' ? (
+                {profileSubTab === 'ai-silhouette' && (
                   <motion.div
                     key="ai-silhouette"
                     initial={{ opacity: 0, y: 10 }}
@@ -713,7 +1199,9 @@ export default function App() {
                       onSelectProduct={(product) => setSelectedProduct(product)}
                     />
                   </motion.div>
-                ) : (
+                )}
+
+                {profileSubTab === 'profile-form' && (
                   <motion.div
                     key="profile-form"
                     initial={{ opacity: 0, y: 10 }}
@@ -724,6 +1212,21 @@ export default function App() {
                     <FitProfileForm
                       currentProfile={user?.fitProfile}
                       onSaveProfile={handleSaveFitProfile}
+                    />
+                  </motion.div>
+                )}
+
+                {profileSubTab === 'order-tracking' && (
+                  <motion.div
+                    key="order-tracking"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    <OrderJourneyTracker
+                      orders={orders}
+                      currentUserEmail={user?.email}
                     />
                   </motion.div>
                 )}
@@ -777,9 +1280,24 @@ export default function App() {
       </div>
 
       {/* 4. Product Detail Modal */}
-      {selectedProduct && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-[#e7e5e4] shadow-2xl relative grid grid-cols-1 md:grid-cols-2 gap-8 p-6 md:p-8">
+      <AnimatePresence>
+        {selectedProduct && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            onClick={() => setSelectedProduct(null)}
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs"
+          >
+            <motion.div
+              initial={{ scale: 0.94, y: 15, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.94, y: 15, opacity: 0 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 210, mass: 1 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-[#e7e5e4] shadow-2xl relative grid grid-cols-1 md:grid-cols-2 gap-8 p-6 md:p-8"
+            >
             
             <button
               onClick={() => setSelectedProduct(null)}
@@ -855,7 +1373,7 @@ export default function App() {
                   </div>
 
                   {/* Occasion buttons */}
-                  <div className="grid grid-cols-4 gap-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                     {(['office', 'party', 'home', 'college'] as const).map((occ) => (
                       <button
                         key={occ}
@@ -976,9 +1494,10 @@ export default function App() {
 
             </div>
 
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+    </AnimatePresence>
 
       {/* 5. Cart Slide-Out Drawer */}
       {isCartOpen && (
@@ -1012,7 +1531,36 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                <div className="space-y-4">
+                  {/* Premium Free Shipping Meter */}
+                  <div className="p-3 bg-stone-100 rounded-xl border border-stone-200/60 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-outfit">
+                      <span className="font-medium text-stone-700 flex items-center gap-1">
+                        <Package className="w-3.5 h-3.5 text-[#c2a46c]" />
+                        {cartSubtotal >= 5000 ? (
+                          <span className="text-emerald-800 font-semibold">Complimentary Express Shipping Applied</span>
+                        ) : (
+                          <span>Complimentary Express Shipping</span>
+                        )}
+                      </span>
+                      <span className="font-mono text-stone-950 font-bold">
+                        {cartSubtotal >= 5000 ? "FREE" : `₹${Math.max(0, 5000 - cartSubtotal)} left`}
+                      </span>
+                    </div>
+                    <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-[#c2a46c] h-1.5 transition-all duration-500 rounded-full"
+                        style={{ width: `${Math.min(100, (cartSubtotal / 5000) * 100)}%` }}
+                      />
+                    </div>
+                    {cartSubtotal < 5000 && (
+                      <p className="text-[9px] text-stone-500 font-outfit">
+                        Purchase ₹{5000 - cartSubtotal} more to unlock free shipping. Current flat fee: ₹150.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-4 max-h-[48vh] overflow-y-auto pr-1">
                   {cart.map((item) => (
                     <div
                       key={item.id}
@@ -1054,32 +1602,116 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-              )}
+              </div>
+            )}
             </div>
 
             {cart.length > 0 && (
-              <div className="border-t border-[#e7e5e4] pt-6 space-y-4 bg-[#fafaf9]">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#78716c] font-outfit uppercase tracking-widest">Subtotal</span>
-                  <span className="font-mono text-sm font-bold text-[#1c1917]">₹{cartSubtotal}</span>
+              <div className="border-t border-[#e7e5e4] pt-4 space-y-3 bg-[#fafaf9]">
+                {/* Premium Promo Code Entry */}
+                <div className="space-y-1">
+                  <label className="text-[9px] uppercase font-mono tracking-wider text-stone-500 block">
+                    Have an Atelier Access Code?
+                  </label>
+                  <form onSubmit={handleApplyPromo} className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        placeholder="e.g. WELCOME10, LAUNCH20"
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value)}
+                        disabled={!!appliedPromo}
+                        className="w-full pl-7 pr-2 py-1 rounded-lg border border-stone-200 text-[11px] bg-white font-mono uppercase focus:ring-1 focus:ring-stone-500/50"
+                      />
+                      <Ticket className="w-3.5 h-3.5 text-stone-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                    </div>
+                    {appliedPromo ? (
+                      <button
+                        type="button"
+                        onClick={handleRemovePromo}
+                        className="px-2.5 py-1 bg-stone-200 hover:bg-stone-300 text-stone-800 text-[10px] uppercase font-mono font-bold tracking-wider rounded-lg transition-all cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        className="px-3 py-1 bg-stone-900 hover:bg-stone-800 text-white text-[10px] uppercase font-mono font-bold tracking-wider rounded-lg transition-all cursor-pointer"
+                      >
+                        Apply
+                      </button>
+                    )}
+                  </form>
+                  {promoError && (
+                    <p className="text-[9px] text-red-500 font-outfit font-medium">{promoError}</p>
+                  )}
+                  {appliedPromo && (
+                    <p className="text-[10px] text-emerald-700 font-outfit font-medium flex items-center gap-1">
+                      <Check className="w-3 h-3 animate-bounce" />
+                      Code Applied: &ldquo;{appliedPromo.code}&rdquo; ({appliedPromo.discountPercent}% OFF)
+                    </p>
+                  )}
                 </div>
 
-                <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-100 space-y-1">
+                {/* Gift Wrapping Option */}
+                <label className="flex items-start space-x-2 p-1.5 bg-stone-50 rounded-lg border border-stone-200/40 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={giftWrapping}
+                    onChange={(e) => setGiftWrapping(e.target.checked)}
+                    className="rounded border-stone-300 text-stone-900 focus:ring-0 mt-0.5"
+                  />
+                  <div>
+                    <span className="text-[10px] font-bold text-stone-800 font-outfit flex items-center gap-1">
+                      <Gift className="w-3.5 h-3.5 text-[#c2a46c]" />
+                      Complimentary Gift Wrap & Dust Bag
+                    </span>
+                    <span className="text-[8px] text-stone-500 block leading-tight mt-0.5">
+                       जयपुर hand-made paper, custom gold wax seal stamp, premium dust pouch.
+                    </span>
+                  </div>
+                </label>
+
+                {/* Pricing summary */}
+                <div className="space-y-1 text-xs border-t border-b border-stone-100 py-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-500 font-outfit">Sourcing Subtotal</span>
+                    <span className="font-mono text-stone-900">₹{cartSubtotal}</span>
+                  </div>
+                  {appliedPromo && (
+                    <div className="flex items-center justify-between text-emerald-700 font-medium">
+                      <span className="font-outfit">Access Code Discount</span>
+                      <span className="font-mono">-₹{promoDiscount}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-500 font-outfit">Express Delivery</span>
+                    <span className="font-mono text-stone-950 font-bold">
+                      {shippingFee === 0 ? <span className="text-emerald-700 uppercase text-[10px] font-bold">Complimentary</span> : `₹${shippingFee}`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-emerald-50 rounded-lg border border-emerald-100 space-y-0.5">
                   <div className="flex items-center justify-between text-[11px] text-emerald-800 font-bold">
-                    <span>Purpose Roundup (Split)</span>
+                    <span>Atelier Purpose Roundup (Optional)</span>
                     <span>₹{computedRoundUp}</span>
                   </div>
-                  <p className="text-[10px] text-emerald-600 leading-normal">
-                    Check the box at checkout to round up your total to ₹{nextHundredValue} in support of our charity ledger. Slogan: Dress with purpose.
+                  <p className="text-[9px] text-emerald-600 leading-normal">
+                    Turn ₹{discountedSubtotal + shippingFee} into ₹{nextHundredValue} at checkout to support animal care, orphans, and the disabled.
                   </p>
                 </div>
 
                 <button
                   onClick={() => {
                     setIsCartOpen(false);
+                    if (user) {
+                      setCheckoutName(user.name || user.displayName || '');
+                      setCheckoutEmail(user.email || '');
+                    }
                     setIsCheckoutOpen(true);
                   }}
-                  className="w-full py-3 bg-[#1c1917] hover:bg-[#3c3734] text-white text-xs uppercase tracking-widest font-outfit font-medium rounded-lg transition-all cursor-pointer text-center"
+                  className="w-full py-2.5 bg-[#1c1917] hover:bg-[#3c3734] text-white text-xs uppercase tracking-widest font-outfit font-medium rounded-lg transition-all cursor-pointer text-center"
                 >
                   Proceed to Secure Checkout
                 </button>
@@ -1172,11 +1804,24 @@ export default function App() {
       )}
 
       {/* 7. Interactive Search Modal */}
-      {isSearchOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 pt-20 backdrop-blur-xs animate-fade-in">
-          <div className="absolute inset-0" onClick={() => setIsSearchOpen(false)} />
-          
-          <div className="bg-white rounded-2xl w-full max-w-2xl relative z-10 p-6 border shadow-2xl space-y-4">
+      <AnimatePresence>
+        {isSearchOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 pt-20 backdrop-blur-xs"
+          >
+            <div className="absolute inset-0" onClick={() => setIsSearchOpen(false)} />
+            
+            <motion.div
+              initial={{ scale: 0.94, y: -20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.94, y: -20, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220, mass: 1 }}
+              className="bg-white rounded-2xl w-full max-w-2xl relative z-10 p-6 border shadow-2xl space-y-4"
+            >
             <div className="flex items-center justify-between border-b pb-3">
               <span className="serif-header font-bold text-stone-900">Explore the Atelier catalog</span>
               <button onClick={() => setIsSearchOpen(false)} className="text-stone-500 hover:text-stone-900 cursor-pointer">
@@ -1190,10 +1835,25 @@ export default function App() {
                 placeholder="Search by fabrics, silhouettes, or styles (e.g. Linen, Co-ord)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-stone-100 border rounded-xl focus:outline-hidden focus:border-stone-900 focus:bg-white text-xs font-outfit"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    addRecentSearch(searchQuery);
+                  }
+                }}
+                className="w-full pl-10 pr-10 py-3 bg-stone-100 border rounded-xl focus:outline-hidden focus:border-stone-900 focus:bg-white text-xs font-outfit"
                 autoFocus
               />
               <Search className="w-4 h-4 text-stone-400 absolute left-3 top-3.5" />
+              
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-3 p-1 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-200 transition-all cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             {searchQuery && (
@@ -1202,30 +1862,127 @@ export default function App() {
               </p>
             )}
 
-            <div className="max-h-60 overflow-y-auto divide-y">
-              {filteredProducts.slice(0, 5).map((p) => (
-                <div
-                  key={p.id}
-                  onClick={() => {
-                    setSelectedProduct(p);
-                    setIsSearchOpen(false);
-                  }}
-                  className="py-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 rounded-lg px-2"
-                >
-                  <div className="flex items-center space-x-3 truncate">
-                    <img src={p.images[0]} alt="" referrerPolicy="no-referrer" className="w-10 h-12 object-cover rounded" />
-                    <div>
-                      <p className="font-serif text-xs font-bold text-stone-900">{p.name}</p>
-                      <p className="text-[10px] text-stone-500 font-outfit">{p.materials}</p>
-                    </div>
+            {!searchQuery ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                {/* Recent Searches */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-wider font-mono font-bold text-stone-500 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-[#c2a46c]" />
+                      Recent Searches
+                    </span>
+                    {recentSearches.length > 0 && (
+                      <button 
+                        onClick={clearRecentSearches}
+                        className="text-[10px] uppercase tracking-wider font-mono text-red-600 hover:text-red-700 font-bold transition-all cursor-pointer"
+                      >
+                        Clear All
+                      </button>
+                    )}
                   </div>
-                  <span className="font-mono text-xs text-stone-900">₹{p.price}</span>
+                  
+                  {recentSearches.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {recentSearches.map((q, idx) => (
+                        <div 
+                          key={idx} 
+                          className="flex items-center bg-stone-50 border border-stone-200/80 rounded-lg py-1 px-2.5 transition-all hover:bg-stone-100 hover:border-stone-300 group"
+                        >
+                          <button
+                            onClick={() => {
+                              setSearchQuery(q);
+                              addRecentSearch(q);
+                            }}
+                            className="text-xs text-stone-700 font-outfit cursor-pointer mr-1.5 hover:text-[#c2a46c] transition-all"
+                          >
+                            {q}
+                          </button>
+                          <button
+                            onClick={() => removeRecentSearch(q)}
+                            className="text-stone-400 hover:text-stone-600 rounded transition-all cursor-pointer p-0.5"
+                            title="Remove from history"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-stone-400 font-light italic">
+                      No recent searches recorded yet. Explore our bespoke designs to populate your history.
+                    </p>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
+
+                {/* Trending Categories */}
+                <div className="space-y-3">
+                  <span className="text-[10px] uppercase tracking-wider font-mono font-bold text-stone-500 flex items-center gap-1.5">
+                    <TrendingUp className="w-3.5 h-3.5 text-[#c2a46c]" />
+                    Trending Categories
+                  </span>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      { query: 'Linen', title: 'Summer Linens', desc: 'Lightweight & airy' },
+                      { query: 'Silk', title: 'Banarasi Silk', desc: 'Royal evening heritage' },
+                      { query: 'Co-ord', title: 'Premium Co-ords', desc: 'Pre-matched luxury sets' },
+                      { query: 'Cotton', title: 'Mulmul Cotton', desc: 'Buttery soft daywear' },
+                      { query: 'Kurta', title: 'Atelier Kurtas', desc: 'Traditional artisan fits' },
+                      { query: 'Donation', title: 'Dress with Purpose', desc: 'Ethical fashion lines' }
+                    ].map((item, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setSearchQuery(item.query);
+                          addRecentSearch(item.query);
+                        }}
+                        className="p-2.5 rounded-xl border border-stone-200/80 bg-stone-50/50 hover:bg-stone-50 hover:border-stone-300 text-left transition-all cursor-pointer flex flex-col justify-between h-full group"
+                      >
+                        <span className="font-serif text-xs font-bold text-stone-900 group-hover:text-[#c2a46c] transition-all">
+                          {item.title}
+                        </span>
+                        <span className="text-[10px] text-stone-400 font-outfit leading-tight mt-0.5">
+                          {item.desc}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="max-h-60 overflow-y-auto divide-y">
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.slice(0, 6).map((p) => (
+                    <div
+                      key={p.id}
+                      onClick={() => {
+                        addRecentSearch(searchQuery);
+                        setSelectedProduct(p);
+                        setIsSearchOpen(false);
+                      }}
+                      className="py-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 rounded-lg px-2"
+                    >
+                      <div className="flex items-center space-x-3 truncate">
+                        <img src={p.images[0]} alt="" referrerPolicy="no-referrer" className="w-10 h-12 object-cover rounded pointer-events-none" />
+                        <div>
+                          <p className="font-serif text-xs font-bold text-stone-900">{p.name}</p>
+                          <p className="text-[10px] text-stone-500 font-outfit">{p.materials}</p>
+                        </div>
+                      </div>
+                      <span className="font-mono text-xs text-stone-900">₹{p.price}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-6 text-center text-xs text-[#78716c] font-light italic">
+                    No matching atelier designs located for &ldquo;{searchQuery}&rdquo;. Try another search term or browse Trending.
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
       )}
+    </AnimatePresence>
 
       {/* 8. Checkout Purchase Overlay */}
       {isCheckoutOpen && (
@@ -1342,12 +2099,23 @@ export default function App() {
                     <div className="bg-stone-50 p-3.5 rounded-xl border border-stone-100 text-xs space-y-2 leading-relaxed">
                       <p className="font-bold text-stone-800 flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5 text-[#c2a46c]" />
-                        <span>Delivery Coordinates</span>
+                        <span>Delivery & Sourcing Parameters</span>
                       </p>
                       <p className="text-stone-600 font-mono pl-4.5">
-                        {lastOrderName} <br />
+                        <span className="text-stone-900 font-bold">{lastOrderName}</span> <br />
                         {lastOrderAddress}, {lastOrderCity} <br />
-                        Secured Air Courier Dispatch
+                        Phone: {lastOrderPhone || "N/A"} <br />
+                        {lastOrderNotes && (
+                          <>
+                            <span className="italic text-stone-500">Atelier Note: &ldquo;{lastOrderNotes}&rdquo;</span> <br />
+                          </>
+                        )}
+                        {lastOrderGiftWrapping && (
+                          <span className="text-[#c2a46c] text-[10px] font-bold flex items-center gap-1 mt-0.5">
+                            <Gift className="w-3.5 h-3.5" /> Applied: Complimentary Jaipur Hand-made Paper Gift Wrap (Wax Seal Stamp)
+                          </span>
+                        )}
+                        <span className="text-stone-500 text-[10px]">Payment Parameter: {lastOrderPaymentMethod.toUpperCase()} (Secured Ledger)</span>
                       </p>
                     </div>
 
@@ -1384,6 +2152,18 @@ export default function App() {
                       <div className="flex justify-between text-stone-500">
                         <span>Sourced Subtotal</span>
                         <span className="font-mono text-stone-800">₹{lastOrderSubtotal}</span>
+                      </div>
+                      {lastOrderPromoDiscount > 0 && (
+                        <div className="flex justify-between text-emerald-700 font-semibold">
+                          <span>Access Code Discount Applied</span>
+                          <span className="font-mono">-₹{lastOrderPromoDiscount}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-stone-500">
+                        <span>Express Logistics Delivery</span>
+                        <span className="font-mono text-stone-800">
+                          {lastOrderShippingFee === 0 ? "Complimentary" : `₹${lastOrderShippingFee}`}
+                        </span>
                       </div>
                       {lastOrderRoundUp > 0 && (
                         <div className="flex justify-between text-emerald-700 font-semibold bg-emerald-50/50 p-1.5 rounded-md">
@@ -1444,21 +2224,33 @@ export default function App() {
                     {/* Closing Slogan */}
                     <div className="text-center pt-6 border-t border-stone-100 text-stone-400 space-y-1">
                       <p className="text-[11px] italic font-serif">&ldquo;Dress with precision, act with purpose.&rdquo;</p>
-                      <p className="text-[9px] font-mono tracking-wider uppercase">Vividhra Atelier Mumbai © 2026</p>
+                      <p className="text-[9px] font-mono tracking-wider uppercase">Vividhra Atelier Mumbai</p>
                     </div>
 
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-2">
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => {
+                      setIsCheckoutOpen(false);
+                      setCheckoutSuccess(false);
+                      setActiveView('profile');
+                      setProfileSubTab('order-tracking');
+                    }}
+                    className="px-5 py-2.5 bg-amber-600 text-white hover:bg-amber-700 text-xs uppercase tracking-widest font-outfit font-medium rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Package className="w-4 h-4" />
+                    <span>Track Order Sourcing</span>
+                  </button>
                   <button
                     onClick={() => {
                       setIsCheckoutOpen(false);
                       setCheckoutSuccess(false);
                     }}
-                    className="px-6 py-2.5 bg-stone-900 text-white hover:bg-stone-800 text-xs uppercase tracking-widest font-outfit font-medium rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+                    className="px-5 py-2.5 bg-stone-900 text-white hover:bg-stone-800 text-xs uppercase tracking-widest font-outfit font-medium rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
                   >
-                    <span>Done & Continue Sourcing</span>
+                    <span>Done & Continue</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -1475,16 +2267,30 @@ export default function App() {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-stone-500 font-outfit">Full Name</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Aditi Sharma"
-                      value={checkoutName}
-                      onChange={(e) => setCheckoutName(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-lg border text-xs"
-                      required
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] uppercase tracking-wider text-stone-500 font-outfit">Full Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Aditi Sharma"
+                        value={checkoutName}
+                        onChange={(e) => setCheckoutName(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border text-xs"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] uppercase tracking-wider text-stone-500 font-outfit">Contact Phone</label>
+                      <input
+                        type="tel"
+                        placeholder="e.g. +91 98765 43210"
+                        value={checkoutPhone}
+                        onChange={(e) => setCheckoutPhone(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border text-xs"
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-1">
@@ -1494,37 +2300,95 @@ export default function App() {
                       placeholder="patron@vividhra.com"
                       value={checkoutEmail}
                       onChange={(e) => setCheckoutEmail(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-lg border text-xs"
+                      className="w-full px-3.5 py-1.5 rounded-lg border text-xs"
                       required
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-stone-500 font-outfit">Delivery Address</label>
-                    <input
-                      type="text"
-                      placeholder="Street name, Building name, Apartment number"
-                      value={checkoutAddress}
-                      onChange={(e) => setCheckoutAddress(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-lg border text-xs"
-                      required
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] uppercase tracking-wider text-stone-500 font-outfit">Delivery Address</label>
+                      <input
+                        type="text"
+                        placeholder="Street, Apt, Area"
+                        value={checkoutAddress}
+                        onChange={(e) => setCheckoutAddress(e.target.value)}
+                        className="w-full px-3.5 py-1.5 rounded-lg border text-xs"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] uppercase tracking-wider text-stone-500 font-outfit">City</label>
+                      <input
+                        type="text"
+                        placeholder="Mumbai, Maharashtra"
+                        value={checkoutCity}
+                        onChange={(e) => setCheckoutCity(e.target.value)}
+                        className="w-full px-3.5 py-1.5 rounded-lg border text-xs"
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-stone-500 font-outfit">City</label>
+                    <label className="text-[10px] uppercase tracking-wider text-stone-500 font-outfit">Atelier Notes & Instructions (Optional)</label>
                     <input
                       type="text"
-                      placeholder="Mumbai, India"
-                      value={checkoutCity}
-                      onChange={(e) => setCheckoutCity(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-lg border text-xs"
-                      required
+                      placeholder="e.g. gift wrap card message or custom height hem instructions"
+                      value={checkoutNotes}
+                      onChange={(e) => setCheckoutNotes(e.target.value)}
+                      className="w-full px-3.5 py-1.5 rounded-lg border text-xs"
                     />
+                  </div>
+
+                  {/* Secure Payment selector */}
+                  <div className="space-y-1.5 pt-1">
+                    <label className="text-[10px] uppercase tracking-wider text-stone-500 font-outfit block">Secure Payment Method</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('upi')}
+                        className={`py-1.5 px-2 rounded-lg border flex items-center justify-center gap-1 cursor-pointer transition-all ${
+                          paymentMethod === 'upi'
+                            ? 'bg-stone-900 border-stone-900 text-white shadow-xs font-bold'
+                            : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+                        }`}
+                      >
+                        <Sliders className="w-3 h-3 text-[#c2a46c]" />
+                        <span className="text-[10px] font-outfit">UPI / QR</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('card')}
+                        className={`py-1.5 px-2 rounded-lg border flex items-center justify-center gap-1 cursor-pointer transition-all ${
+                          paymentMethod === 'card'
+                            ? 'bg-stone-900 border-stone-900 text-white shadow-xs font-bold'
+                            : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+                        }`}
+                      >
+                        <CreditCard className="w-3 h-3 text-[#c2a46c]" />
+                        <span className="text-[10px] font-outfit">Card</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('cod')}
+                        className={`py-1.5 px-2 rounded-lg border flex items-center justify-center gap-1 cursor-pointer transition-all ${
+                          paymentMethod === 'cod'
+                            ? 'bg-stone-900 border-stone-900 text-white shadow-xs font-bold'
+                            : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+                        }`}
+                      >
+                        <Package className="w-3 h-3 text-[#c2a46c]" />
+                        <span className="text-[10px] font-outfit">COD</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
+                <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
                   <label className="flex items-start space-x-2.5 cursor-pointer">
                     <input
                       type="checkbox"
@@ -1536,8 +2400,8 @@ export default function App() {
                       <span className="text-xs font-bold text-stone-900 font-outfit block">
                         Enable &ldquo;Dress with purpose&rdquo; Roundup
                       </span>
-                      <span className="text-[11px] text-stone-500 leading-normal block mt-0.5">
-                        Round up from ₹{cartSubtotal} to ₹{nextHundredValue} (contributing ₹{computedRoundUp}) to split among animal shelters, old age caretakers, orphans, and the disabled.
+                      <span className="text-[10px] text-stone-500 leading-normal block mt-0.5">
+                        Round up from ₹{discountedSubtotal + shippingFee} to ₹{nextHundredValue} (contributing ₹{computedRoundUp}) to split among animal shelters, old age caretakers, orphans, and the disabled.
                       </span>
                     </div>
                   </label>
@@ -1561,7 +2425,7 @@ export default function App() {
                                   setCheckoutCharities([...checkoutCharities, c.id]);
                                 }
                               }}
-                              className={`py-1.5 px-2.5 rounded-lg border text-[10px] font-outfit text-left truncate transition-colors ${
+                              className={`py-1 px-2 rounded-lg border text-[10px] font-outfit text-left truncate transition-colors ${
                                 active
                                   ? 'bg-[#1c1917] text-white border-[#1c1917]'
                                   : 'bg-white text-stone-600 hover:bg-stone-100'
@@ -1576,18 +2440,30 @@ export default function App() {
                   )}
                 </div>
 
-                <div className="space-y-2 font-outfit">
-                  <div className="flex justify-between text-xs text-stone-500">
-                    <span>Subtotal</span>
+                <div className="space-y-1.5 font-outfit text-stone-600 text-xs">
+                  <div className="flex justify-between">
+                    <span>Sourcing Subtotal</span>
                     <span className="font-mono text-stone-900">₹{cartSubtotal}</span>
                   </div>
+                  {appliedPromo && (
+                    <div className="flex justify-between text-emerald-700 font-semibold">
+                      <span>Access Code Discount ({appliedPromo.code})</span>
+                      <span className="font-mono">-₹{promoDiscount}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span>Express Logistics</span>
+                    <span className="font-mono text-stone-900">
+                      {shippingFee === 0 ? <span className="text-emerald-700 uppercase font-bold text-[10px]">Complimentary</span> : `₹${shippingFee}`}
+                    </span>
+                  </div>
                   {isRoundUpEnabled && (
-                    <div className="flex justify-between text-xs text-stone-500">
+                    <div className="flex justify-between">
                       <span>Purpose roundup</span>
                       <span className="font-mono text-stone-900">₹{computedRoundUp}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm font-bold pt-2 border-t text-stone-900">
+                  <div className="flex justify-between text-sm font-bold pt-1.5 border-t text-stone-900">
                     <span>Total secured amount</span>
                     <span className="font-mono text-[#c2a46c]">₹{checkoutTotal}</span>
                   </div>
@@ -1595,9 +2471,9 @@ export default function App() {
 
                 <button
                   type="submit"
-                  className="w-full py-3 bg-[#1c1917] hover:bg-[#3c3734] text-white text-xs uppercase tracking-widest font-outfit font-medium rounded-lg transition-all cursor-pointer"
+                  className="w-full py-2.5 bg-[#1c1917] hover:bg-[#3c3734] text-white text-xs uppercase tracking-widest font-outfit font-medium rounded-lg transition-all cursor-pointer text-center"
                 >
-                  Pay ₹{checkoutTotal} (Secured Ledger)
+                  Pay ₹{checkoutTotal} via {paymentMethod.toUpperCase()}
                 </button>
               </form>
             )}

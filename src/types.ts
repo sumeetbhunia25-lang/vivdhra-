@@ -78,6 +78,13 @@ export interface Order {
   createdAt: string;
   address: string;
   city: string;
+  phone?: string;
+  notes?: string;
+  paymentMethod?: string;
+  giftWrapping?: boolean;
+  promoCode?: string | null;
+  promoDiscount?: number;
+  shippingFee?: number;
 }
 
 export interface UserAccount {

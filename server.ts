@@ -153,7 +153,7 @@ const INITIAL_PRODUCTS = [
     category: 'blazers',
     price: 2499,
     originalPrice: 3499,
-    description: 'A structural, eco-friendly linen blazer tailored with a relaxed waist, soft shoulder draping, and double-breasted closure. Part of our purposeful capsule collection.',
+    description: 'A structural, eco-friendly linen blazer tailored with a relaxed waist, soft shoulder draping, and double-breasted closure. Part of our purposeful signature collection.',
     slogan: 'Dress with purpose',
     materials: '100% Eco-Certified Organic Linen',
     care: 'Dry clean or gentle hand wash in cold water with mild detergent. Lay flat to dry.',
@@ -574,8 +574,10 @@ app.post('/api/user/auth', (req, res) => {
     const uid = 'user_' + Math.random().toString(36).substr(2, 9);
     db.users[uid] = {
       uid,
+      id: uid,
       email: lowercaseEmail,
       displayName: lowercaseEmail.split('@')[0].toUpperCase(),
+      name: lowercaseEmail.split('@')[0].toUpperCase(),
       role: role || (lowercaseEmail.includes('admin') || lowercaseEmail === 'smita.sharma@vividhra.com' ? 'admin' : 'customer'),
       wishlist: [],
       cart: []
@@ -590,6 +592,79 @@ app.post('/api/user/auth', (req, res) => {
     }
   }
   res.json(user);
+});
+
+// Patron Registration
+app.post('/api/user/register', (req, res) => {
+  const { email, password, displayName, name, role } = req.body;
+  
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+  
+  const lowercaseEmail = email.toLowerCase();
+  
+  // Check if user already exists
+  const exists = Object.values(db.users).find(u => u.email.toLowerCase() === lowercaseEmail);
+  if (exists) {
+    return res.status(400).json({ error: 'A patron with this email already exists.' });
+  }
+  
+  const uid = 'user_' + Math.random().toString(36).substr(2, 9);
+  const formattedName = name || displayName || lowercaseEmail.split('@')[0].toUpperCase();
+  
+  db.users[uid] = {
+    uid,
+    id: uid,
+    email: lowercaseEmail,
+    displayName: formattedName,
+    name: formattedName,
+    password: password, // Stored safely in server-side JSON DB
+    role: role || (lowercaseEmail.includes('admin') || lowercaseEmail === 'smita.sharma@vividhra.com' ? 'admin' : 'customer'),
+    wishlist: [],
+    cart: [],
+    fitProfile: {
+      height: 165,
+      bodyType: 'hourglass',
+      shoulderStructure: 'average',
+      bustFitPreference: 'comfort',
+      waistFitPreference: 'comfort',
+      hipFitPreference: 'comfort',
+      fitStyle: 'classic',
+      comfortPreference: 'standard',
+      preferredLengths: 'Midi, Ankle Length',
+      sleevePreference: 'full',
+      modestyPreference: 'medium',
+      outfitMood: 'elegant',
+      occasionPreference: 'office'
+    }
+  };
+  
+  saveDB();
+  
+  // Return user details (without password)
+  const { password: _, ...userWithoutPassword } = db.users[uid];
+  res.json(userWithoutPassword);
+});
+
+// Patron Login / Sign In
+app.post('/api/user/login', (req, res) => {
+  const { email, password } = req.body;
+  
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+  
+  const lowercaseEmail = email.toLowerCase();
+  const user = Object.values(db.users).find(u => u.email.toLowerCase() === lowercaseEmail);
+  
+  if (!user || user.password !== password) {
+    return res.status(400).json({ error: 'Invalid email or password. Please verify your credentials.' });
+  }
+  
+  // Return user details (without password)
+  const { password: _, ...userWithoutPassword } = user;
+  res.json(userWithoutPassword);
 });
 
 // Get/Sync user
@@ -706,16 +781,24 @@ app.post('/api/donations/logs', (req, res) => {
 
 // Fallback/Default Profile GET
 app.get('/api/user/profile', (req, res) => {
-  res.json(db.users['guest-uid'] || { email: 'guest@vividhra.com', fitProfile: {} });
+  const uid = req.query.uid as string;
+  if (uid && db.users[uid]) {
+    res.json(db.users[uid]);
+  } else {
+    res.json(db.users['guest-uid'] || { email: 'guest@vividhra.com', fitProfile: {} });
+  }
 });
 
 // Fallback/Default Profile POST
 app.post('/api/user/profile', (req, res) => {
   const updatedUser = req.body;
-  const uid = updatedUser.uid || 'guest-uid';
+  const uid = updatedUser.uid || updatedUser.id || 'guest-uid';
+  
+  const existingUser = db.users[uid] || {};
   db.users[uid] = {
-    ...db.users[uid],
-    ...updatedUser
+    ...existingUser,
+    ...updatedUser,
+    password: existingUser.password || updatedUser.password // Preserve password if exists
   };
   saveDB();
   res.json(db.users[uid]);
@@ -765,7 +848,23 @@ app.get('/api/orders', (req, res) => {
 
 // Submit Order
 app.post('/api/orders', (req, res) => {
-  const { customerName, customerEmail, items, subtotal, donationAmount, total, address, city } = req.body;
+  const { 
+    customerName, 
+    customerEmail, 
+    items, 
+    subtotal, 
+    donationAmount, 
+    total, 
+    address, 
+    city,
+    phone,
+    notes,
+    paymentMethod,
+    giftWrapping,
+    promoCode,
+    promoDiscount,
+    shippingFee
+  } = req.body;
   
   const orderId = 'VIV-' + Math.floor(10000 + Math.random() * 90000);
   
@@ -780,7 +879,14 @@ app.post('/api/orders', (req, res) => {
     status: 'pending' as const,
     createdAt: new Date().toISOString(),
     address: address || 'Mumbai',
-    city: city || 'Mumbai'
+    city: city || 'Mumbai',
+    phone: phone || '',
+    notes: notes || '',
+    paymentMethod: paymentMethod || 'upi',
+    giftWrapping: giftWrapping || false,
+    promoCode: promoCode || null,
+    promoDiscount: promoDiscount || 0,
+    shippingFee: shippingFee || 0
   };
 
   db.orders.unshift(newOrder);

@@ -530,10 +530,26 @@ export default function AdminPanel({
                     <td className="py-4 px-4">
                       <p className="font-bold text-[#1c1917]">{order.customerName}</p>
                       <p className="text-[10px] text-[#78716c] font-mono">{order.customerEmail}</p>
+                      {order.phone && (
+                        <p className="text-[10px] text-stone-500 font-mono mt-0.5 flex items-center gap-1">
+                          <span>📞 {order.phone}</span>
+                        </p>
+                      )}
                     </td>
                     <td className="py-4 px-4 text-[#57534e]">
                       <p>{order.address}</p>
                       <p className="text-[10px] font-mono">{order.city}</p>
+                      
+                      {order.notes && (
+                        <p className="text-[10px] bg-stone-100 text-stone-600 rounded p-1 mt-1 font-sans italic max-w-[200px] whitespace-normal">
+                          &ldquo;{order.notes}&rdquo;
+                        </p>
+                      )}
+                      {order.giftWrapping && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">
+                          🎁 Handwrap + Gold Wax Seal
+                        </span>
+                      )}
                     </td>
                     <td className="py-4 px-4 font-mono text-[#1c1917]">
                       {order.items.reduce((acc, i) => acc + i.quantity, 0)} pc(s)
@@ -541,8 +557,23 @@ export default function AdminPanel({
                     <td className="py-4 px-4 font-mono font-bold text-emerald-600">
                       ₹{order.donationAmount || 0}
                     </td>
-                    <td className="py-4 px-4 font-mono font-bold text-[#1c1917]">
-                      ₹{order.total.toLocaleString('en-IN')}
+                    <td className="py-4 px-4">
+                      <p className="font-mono font-bold text-[#1c1917]">
+                        ₹{order.total.toLocaleString('en-IN')}
+                      </p>
+                      <p className="text-[9px] uppercase tracking-wider text-stone-500 font-bold mt-0.5">
+                        {order.paymentMethod ? order.paymentMethod.toUpperCase() : 'UPI'}
+                      </p>
+                      {order.promoCode && (
+                        <p className="text-[9px] text-emerald-700 font-medium mt-0.5">
+                          Code: {order.promoCode} (-₹{order.promoDiscount})
+                        </p>
+                      )}
+                      {order.shippingFee !== undefined && (
+                        <p className="text-[9px] text-stone-500 mt-0.5">
+                          Logistics: {order.shippingFee === 0 ? 'Free' : `₹${order.shippingFee}`}
+                        </p>
+                      )}
                     </td>
                     <td className="py-4 px-4">
                       <select
