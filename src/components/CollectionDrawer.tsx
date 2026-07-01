@@ -299,13 +299,8 @@ export default function CollectionDrawer({
                       key={cat.id}
                       onClick={() => {
                         setSelectedCategory(cat.id);
-                        setActiveView('home');
+                        setActiveView('shop');
                         onClose();
-                        // Timeout to ensure view switch renders before scrolling
-                        setTimeout(() => {
-                          const grid = document.getElementById('collection-grid');
-                          grid?.scrollIntoView({ behavior: 'smooth' });
-                        }, 100);
                       }}
                       className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 cursor-pointer text-left ${
                         isSelected

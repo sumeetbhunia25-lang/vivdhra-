@@ -45,8 +45,11 @@ import ZaraOpeningIntro from './components/ZaraOpeningIntro';
 import AISilhouetteStudio from './components/AISilhouetteStudio';
 import PremiumHero from './components/PremiumHero';
 import OrderJourneyTracker from './components/OrderJourneyTracker';
+import OrderTrackingPage from './components/OrderTrackingPage';
 import CollectionDrawer, { collectionCategories } from './components/CollectionDrawer';
 import { ReactHelmet } from './components/ReactHelmet';
+import CategoryListingPage from './components/CategoryListingPage';
+import ProductDetailPage from './components/ProductDetailPage';
 
 const categoriesList = [
   { id: 'all', label: 'All Items', image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=200' },
@@ -65,7 +68,7 @@ export default function App() {
 
   // Navigation & Core views
   const [showIntro, setShowIntro] = useState(false);
-  const [activeView, setActiveView] = useState<'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop' | 'tracking'>('home');
   const [profileSubTab, setProfileSubTab] = useState<'ai-silhouette' | 'profile-form' | 'order-tracking'>('ai-silhouette');
   const [user, setUser] = useState<UserAccount | null>({
     id: 'user_1',
@@ -657,6 +660,7 @@ export default function App() {
         activeView={activeView}
         selectedProduct={selectedProduct}
         selectedCategory={selectedCategory}
+        products={products}
       />
       
       <AnimatePresence>
@@ -717,9 +721,85 @@ export default function App() {
       {/* 2. Main Visual Canvas Views */}
       <main className="min-h-screen">
         <AnimatePresence mode="wait">
-          
+
+          {/* DEDICATED PRODUCT DETAIL VIEW */}
+          {selectedProduct && (
+            <motion.div
+              key={`product-detail-${selectedProduct.id}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.4 }}
+            >
+              <ProductDetailPage
+                product={selectedProduct}
+                onBack={() => setSelectedProduct(null)}
+                onAddToCart={(p, size, color, qty) => {
+                  const qtyToAdd = qty || 1;
+                  setCart((prev) => {
+                    const existingIndex = prev.findIndex(
+                      (item) => item.product.id === p.id && item.size === size && item.color === color
+                    );
+                    if (existingIndex > -1) {
+                      const updated = [...prev];
+                      updated[existingIndex].quantity += qtyToAdd;
+                      return updated;
+                    }
+                    return [...prev, { product: p, quantity: qtyToAdd, size, color }];
+                  });
+                }}
+                onBuyNow={(p, size, color, qty) => {
+                  const qtyToAdd = qty || 1;
+                  setCart((prev) => {
+                    const existingIndex = prev.findIndex(
+                      (item) => item.product.id === p.id && item.size === size && item.color === color
+                    );
+                    let updated = [...prev];
+                    if (existingIndex > -1) {
+                      updated[existingIndex].quantity += qtyToAdd;
+                    } else {
+                      updated = [...prev, { product: p, quantity: qtyToAdd, size, color }];
+                    }
+                    return updated;
+                  });
+                  setSelectedProduct(null);
+                  setIsCartOpen(true);
+                }}
+                onWishlistToggle={handleToggleWishlist}
+                isWishlisted={wishlist.some((w) => w.product.id === selectedProduct.id)}
+                products={products}
+                setSelectedProduct={setSelectedProduct}
+                setIsAIStylistOpen={setIsAIStylistOpen}
+              />
+            </motion.div>
+          )}
+
+          {/* DEDICATED CATEGORY LISTING VIEW */}
+          {!selectedProduct && activeView === 'shop' && (
+            <motion.div
+              key="shop"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.4 }}
+            >
+              <CategoryListingPage
+                selectedCategory={selectedCategory}
+                setSelectedCategory={setSelectedCategory}
+                products={products}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                setSelectedProduct={setSelectedProduct}
+                handleAddToCart={handleAddToCart}
+                handleToggleWishlist={handleToggleWishlist}
+                wishlist={wishlist}
+                categoriesList={categoriesList}
+              />
+            </motion.div>
+          )}
+
           {/* HOMEPAGE VIEW */}
-          {activeView === 'home' && (
+          {!selectedProduct && activeView === 'home' && (
             <motion.div
               key="home"
               initial={{ opacity: 0, y: 15 }}
@@ -898,6 +978,23 @@ export default function App() {
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             >
               <StoryPage />
+            </motion.div>
+          )}
+
+          {/* STANDALONE ORDER TRACKING VIEW */}
+          {activeView === 'tracking' && (
+            <motion.div
+              key="tracking"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <OrderTrackingPage 
+                orders={orders}
+                currentUserEmail={user?.email}
+                onBackToShop={() => setActiveView('home')}
+              />
             </motion.div>
           )}
 
@@ -1347,225 +1444,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* 4. Product Detail Modal */}
-      <AnimatePresence>
-        {selectedProduct && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            onClick={() => setSelectedProduct(null)}
-            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs"
-          >
-            <motion.div
-              initial={{ scale: 0.94, y: 15, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.94, y: 15, opacity: 0 }}
-              transition={{ type: 'spring', damping: 26, stiffness: 210, mass: 1 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-[#e7e5e4] shadow-2xl relative grid grid-cols-1 md:grid-cols-2 gap-8 p-6 md:p-8"
-            >
-            
-            <button
-              onClick={() => setSelectedProduct(null)}
-              className="absolute top-4 right-4 p-2 bg-[#f5f5f4] hover:bg-[#e7e5e4] rounded-full transition-colors cursor-pointer z-10"
-            >
-              <X className="w-5 h-5 text-stone-800" />
-            </button>
-
-            {/* Left Image Carousel */}
-            <div className="space-y-3">
-              <div className="aspect-[3/4] bg-[#f5f5f4] rounded-xl overflow-hidden border">
-                <img
-                  src={selectedProduct.images[0]}
-                  alt={selectedProduct.name}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {selectedProduct.images.map((img, idx) => (
-                  <div key={idx} className="aspect-[4/5] bg-stone-100 rounded-lg overflow-hidden border">
-                    <img src={img} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right details panel */}
-            <div className="flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <span className="text-[10px] uppercase font-mono tracking-widest text-[#c2a46c]">
-                    {selectedProduct.category}
-                  </span>
-                  <h2 className="serif-header text-xl md:text-3xl font-bold text-[#1c1917]">
-                    {selectedProduct.name}
-                  </h2>
-                </div>
-
-                <div className="flex items-baseline space-x-3">
-                  <span className="font-mono text-lg font-bold text-[#1c1917]">₹{selectedProduct.price}</span>
-                  {selectedProduct.originalPrice && (
-                    <span className="font-mono text-xs text-[#a8a29e] line-through">₹{selectedProduct.originalPrice}</span>
-                  )}
-                </div>
-
-                <p className="text-xs text-[#57534e] leading-relaxed font-light">
-                  {selectedProduct.description}
-                </p>
-
-                <div className="space-y-1.5 text-xs text-[#57534e] border-y border-[#f5f5f4] py-3.5">
-                  <p>
-                    <strong className="text-[#1c1917]">Materials:</strong> {selectedProduct.materials}
-                  </p>
-                  <p>
-                    <strong className="text-[#1c1917]">Care Guide:</strong> {selectedProduct.care}
-                  </p>
-                  <p>
-                    <strong className="text-[#1c1917]">Slogan:</strong>{' '}
-                    <span className="text-emerald-600 font-serif italic">Dress with purpose</span>
-                  </p>
-                </div>
-
-                {/* Interactive Occasion Suitability Matcher */}
-                <div className="bg-[#FAF9F5] p-4 rounded-2xl border border-[#e7e5e4] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-wider font-mono text-stone-500 font-bold">
-                      Interactive Suitability Match
-                    </span>
-                    <span className="text-[9px] uppercase font-mono bg-[#c2a46c]/10 text-[#c2a46c] px-2 py-0.5 rounded-full font-bold">
-                      Womenswear Ready
-                    </span>
-                  </div>
-
-                  {/* Occasion buttons */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                    {(['office', 'party', 'home', 'college'] as const).map((occ) => (
-                      <button
-                        key={occ}
-                        type="button"
-                        onClick={() => setSelectedOccasion(occ)}
-                        className={`py-1 rounded-lg text-[10px] font-outfit uppercase tracking-wider transition-all font-semibold cursor-pointer text-center border ${
-                          selectedOccasion === occ
-                            ? 'bg-[#1c1917] text-white border-[#1c1917] shadow-2xs'
-                            : 'bg-white text-stone-500 border-stone-200 hover:border-[#c2a46c]'
-                        }`}
-                      >
-                        {occ}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Score & Commentary */}
-                  {(() => {
-                    const cat = selectedProduct.category.toLowerCase();
-                    let score = 80;
-                    let desc = "";
-
-                    if (cat === 'blazers') {
-                      if (selectedOccasion === 'office') { score = 98; desc = "Sharp tailored shoulders and sustainable weave commands executive presence."; }
-                      else if (selectedOccasion === 'party') { score = 88; desc = "Throw over a silk cowl slip with heels for an effortless high-fashion lounge look."; }
-                      else if (selectedOccasion === 'home') { score = 55; desc = "Structured silhouette. Perfect for polished video calls, but less suited for direct lounging."; }
-                      else if (selectedOccasion === 'college') { score = 82; desc = "Drape it open over high-waisted denim and simple sneakers for an academic edge."; }
-                    } else if (cat === 'dresses') {
-                      if (selectedOccasion === 'office') { score = 75; desc = "Elegant length. Style with a clean blazer to anchor office presentation."; }
-                      else if (selectedOccasion === 'party') { score = 99; desc = "An absolute showstopper. Silk flows luxuriously under twilight lights."; }
-                      else if (selectedOccasion === 'home') { score = 72; desc = "Extremely breathable natural weave offers comfort, though looks highly glamorous."; }
-                      else if (selectedOccasion === 'college') { score = 78; desc = "An effortlessly bohemian option. Pairs lovely with simple flat sandals and tote bags."; }
-                    } else if (cat === 'co-ords') {
-                      if (selectedOccasion === 'office') { score = 84; desc = "Ribbed knit tunic is neat and professional. Keeps you super comfortable during long tasks."; }
-                      else if (selectedOccasion === 'party') { score = 88; desc = "Minimalist luxury base. Add layered necklaces and micro bag to stand out."; }
-                      else if (selectedOccasion === 'home') { score = 98; desc = "Crafted in bamboo cotton. Incredibly soft against skin for premium homestyle hours."; }
-                      else if (selectedOccasion === 'college') { score = 92; desc = "Super trendy matching set look that feels lazy-cozy but displays top-tier taste."; }
-                    } else if (cat === 'trousers') {
-                      if (selectedOccasion === 'office') { score = 98; desc = "Architectural pleats and clean high-waisted rise. Perfect formal staple."; }
-                      else if (selectedOccasion === 'party') { score = 90; desc = "Style with an backless satin top and bold lips for a chic, structural party look."; }
-                      else if (selectedOccasion === 'home') { score = 78; desc = "Fluid satin trousers breathe easily, though we recommend a softer knit for sleep."; }
-                      else if (selectedOccasion === 'college') { score = 92; desc = "Pairs stunningly with simple cropped cardigans and vintage canvas shoes."; }
-                    } else if (cat === 'tops') {
-                      if (selectedOccasion === 'office') { score = 94; desc = "Our poplin shirts are crisp and reliable. Essential core garment."; }
-                      else if (selectedOccasion === 'party') { score = 80; desc = "Tuck with high-rise silk skirts and fine earrings to convert to evening wear."; }
-                      else if (selectedOccasion === 'home') { score = 88; desc = "Lightweight premium yarns keep you feeling fresh and weightless."; }
-                      else if (selectedOccasion === 'college') { score = 96; desc = "Extremely versatile, breathable, and easily layered for library to lab transitions."; }
-                    } else { // vacation or other
-                      if (selectedOccasion === 'office') { score = 68; desc = "Best styled with a tailored blazer to ground the flowing resort silhouette."; }
-                      else if (selectedOccasion === 'party') { score = 94; desc = "Gorgeous earthy colors and breezy silk tiers capture the perfect cocktail hours."; }
-                      else if (selectedOccasion === 'home') { score = 85; desc = "Breezy and loose. Incredible comfort for spending leisure hours reading."; }
-                      else if (selectedOccasion === 'college') { score = 88; desc = "Relaxed vacation energy that makes the campus pathways feel like a coastal retreat."; }
-                    }
-
-                    return (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-stone-600 font-sans font-medium">
-                            Suitability for <span className="font-bold uppercase text-stone-900">{selectedOccasion}</span>
-                          </span>
-                          <span className="font-mono text-xs font-bold text-[#c2a46c]">
-                            {score}% Match
-                          </span>
-                        </div>
-                        {/* Suitability score bar */}
-                        <div className="w-full h-1.5 bg-stone-200 rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${score}%` }}
-                            transition={{ duration: 0.6, ease: 'easeOut' }}
-                            className={`h-full rounded-full ${
-                              score >= 90 ? 'bg-[#c2a46c]' : score >= 80 ? 'bg-stone-800' : 'bg-stone-500'
-                            }`}
-                          />
-                        </div>
-                        <p className="text-[10px] text-stone-500 leading-normal italic">
-                          &ldquo;{desc}&rdquo;
-                        </p>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* Sizing & Actions */}
-              <div className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-widest text-[#78716c] font-outfit font-medium">
-                    Available Sizes
-                  </p>
-                  <div className="flex gap-2">
-                    {selectedProduct.sizes.map((size) => (
-                      <button
-                        key={size}
-                        onClick={() => {
-                          handleAddToCart(selectedProduct, size, selectedProduct.colors[0]);
-                          setSelectedProduct(null);
-                        }}
-                        className="w-10 h-10 rounded-full border border-[#d6d3d1] text-xs font-mono flex items-center justify-center hover:bg-[#1c1917] hover:text-white hover:border-[#1c1917] transition-all cursor-pointer font-bold"
-                      >
-                        {size}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* AI Styling consultation deep-link */}
-                <button
-                  onClick={() => {
-                    setIsAIStylistOpen(true);
-                  }}
-                  className="w-full py-2 bg-[#c2a46c]/10 hover:bg-[#c2a46c]/15 text-[#c2a46c] text-[10px] uppercase tracking-widest font-mono font-bold rounded-lg border border-[#c2a46c]/20 transition-all flex items-center justify-center space-x-2 cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Consult AI Stylist for this garment</span>
-                </button>
-              </div>
-
-            </div>
-
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+      {/* 4. Product Detail Modal replaced by Dedicated Product Detail Page */}
 
       {/* 5. Cart Slide-Out Drawer */}
       {isCartOpen && (

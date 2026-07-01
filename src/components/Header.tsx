@@ -7,8 +7,8 @@ interface HeaderProps {
   cart: CartItem[];
   wishlist: WishlistItem[];
   user: UserAccount | null;
-  activeView: 'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop';
-  setActiveView: (view: 'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop') => void;
+  activeView: 'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop' | 'tracking';
+  setActiveView: (view: 'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop' | 'tracking') => void;
   openCart: () => void;
   openWishlist: () => void;
   openSearch: () => void;
@@ -120,6 +120,7 @@ export default function Header({
   const navItems = [
     { label: 'Collections', view: 'home' as const },
     { label: 'Our Story', view: 'story' as const },
+    { label: 'Track Journey', view: 'tracking' as const },
     { label: 'Fit Profile', view: 'profile' as const },
     ...(user?.role === 'admin' ? [{ label: 'Atelier (Admin)', view: 'admin' as const }] : []),
   ];
@@ -350,13 +351,9 @@ export default function Header({
                                             if (setSelectedCategory) {
                                               setSelectedCategory(subcat.id);
                                             }
-                                            setActiveView('home');
+                                            setActiveView('shop');
                                             setMobileMenuOpen(false);
                                             setIsMobileCollectionsOpen(false);
-                                            setTimeout(() => {
-                                              const grid = document.getElementById('collection-grid');
-                                              grid?.scrollIntoView({ behavior: 'smooth' });
-                                            }, 100);
                                           }}
                                           className="text-[#57534e] hover:text-[#1c1917] text-xs font-outfit py-1.5 text-left flex items-center justify-between group cursor-pointer pr-1"
                                         >
@@ -478,12 +475,8 @@ export default function Header({
                               if (setSelectedCategory) {
                                 setSelectedCategory(cat.id);
                               }
-                              setActiveView('home');
+                              setActiveView('shop');
                               setIsCollectionsHovered(false);
-                              setTimeout(() => {
-                                const grid = document.getElementById('collection-grid');
-                                grid?.scrollIntoView({ behavior: 'smooth' });
-                              }, 100);
                             }}
                             className="text-stone-600 hover:text-[#1c1917] text-xs font-outfit tracking-wide flex items-center justify-between w-full group/item text-left py-1 cursor-pointer"
                           >
