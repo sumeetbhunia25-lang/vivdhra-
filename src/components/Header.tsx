@@ -16,6 +16,8 @@ interface HeaderProps {
   selectedCategory?: string;
   setSelectedCategory?: (cat: string) => void;
   products?: Product[];
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
 }
 
 export default function Header({
@@ -31,6 +33,8 @@ export default function Header({
   selectedCategory,
   setSelectedCategory,
   products,
+  searchQuery,
+  setSearchQuery,
 }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -116,7 +120,6 @@ export default function Header({
   const navItems = [
     { label: 'Collections', view: 'home' as const },
     { label: 'Our Story', view: 'story' as const },
-    { label: 'AI Stylist', view: 'stylist' as const },
     { label: 'Fit Profile', view: 'profile' as const },
     ...(user?.role === 'admin' ? [{ label: 'Atelier (Admin)', view: 'admin' as const }] : []),
   ];
@@ -191,168 +194,57 @@ export default function Header({
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Center Logo Lockup (Vertical stacked Layout matching Image exactly) */}
-        <div className="flex items-center select-none">
+        {/* Center: Brand Wordmark VIVIDHRA */}
+        <div className="flex items-center justify-center flex-1">
           <button
             onClick={() => setActiveView('home')}
-            className="flex flex-col items-center justify-center focus:outline-hidden cursor-pointer group"
+            className={`font-serif text-lg sm:text-xl md:text-2xl font-light tracking-[0.25em] uppercase select-none transition-colors duration-300 focus:outline-none cursor-pointer ${
+              isDarkHeroOverlay 
+                ? 'text-white hover:text-stone-300' 
+                : 'text-[#1c1917] hover:text-[#57534e]'
+            }`}
           >
-            {/* High-Fidelity Custom Transparent Vector SVG Logo Monogram */}
-            <svg
-              className="w-10 h-10 xs:w-11 xs:h-11 md:w-14 md:h-14 transition-all duration-700 group-hover:scale-105 group-hover:rotate-1"
-              viewBox="0 0 120 120"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <linearGradient id="gold-metallic-logo" x1="10" y1="20" x2="110" y2="100" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#dfba73" />
-                  <stop offset="50%" stopColor="#c2a46c" />
-                  <stop offset="100%" stopColor="#8d6f34" />
-                </linearGradient>
-                <linearGradient id="peacock-teal" x1="75" y1="15" x2="105" y2="45" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#0a5c53" />
-                  <stop offset="100%" stopColor="#01362f" />
-                </linearGradient>
-                <linearGradient id="emerald-core" x1="82" y1="22" x2="98" y2="38" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#00c49f" />
-                  <stop offset="100%" stopColor="#017b62" />
-                </linearGradient>
-              </defs>
-
-              {/* Left Wing of the V: Elegant gold spiral loop swoop */}
-              <path
-                d="M 22,38 
-                   C 18,30 25,18 35,21 
-                   C 45,24 45,38 38,42 
-                   C 30,46 22,40 24,30 
-                   C 26,18 42,12 56,22 
-                   C 68,31 72,50 70,70 
-                   C 68,85 55,98 62,103
-                   C 63,105 64,105 64,105
-                   C 60,105 52,95 49,82
-                   C 46,65 52,48 42,38
-                   C 35,30 28,32 30,38
-                   C 32,42 36,42 38,38"
-                fill="url(#gold-metallic-logo)"
-              />
-
-              {/* Main Shaft / Spine of the peacock feather */}
-              <path
-                d="M 62,103 C 65,95 72,78 80,60 C 88,42 96,26 102,15"
-                stroke="url(#gold-metallic-logo)"
-                strokeWidth="4"
-                strokeLinecap="round"
-              />
-
-              {/* Elegant gold feather barbs */}
-              {/* Left side */}
-              <path d="M 65,88 C 58,86 52,78 54,72" stroke="url(#gold-metallic-logo)" strokeWidth="2" strokeLinecap="round" />
-              <path d="M 69,76 C 60,73 52,62 56,54" stroke="url(#gold-metallic-logo)" strokeWidth="2" strokeLinecap="round" />
-              <path d="M 73,63 C 63,58 54,45 61,37" stroke="url(#gold-metallic-logo)" strokeWidth="2" strokeLinecap="round" />
-              <path d="M 77,50 C 66,43 59,27 68,20" stroke="url(#gold-metallic-logo)" strokeWidth="1.8" strokeLinecap="round" />
-              <path d="M 82,36 C 72,28 66,13 77,7" stroke="url(#gold-metallic-logo)" strokeWidth="1.5" strokeLinecap="round" />
-
-              {/* Right side */}
-              <path d="M 63,94 C 70,95 79,97 84,91" stroke="url(#gold-metallic-logo)" strokeWidth="2" strokeLinecap="round" />
-              <path d="M 66,82 C 75,84 85,85 90,77" stroke="url(#gold-metallic-logo)" strokeWidth="2" strokeLinecap="round" />
-              <path d="M 70,70 C 81,72 91,72 96,63" stroke="url(#gold-metallic-logo)" strokeWidth="2" strokeLinecap="round" />
-              <path d="M 74,57 C 87,58 96,56 100,45" stroke="url(#gold-metallic-logo)" strokeWidth="2" strokeLinecap="round" />
-              <path d="M 79,44 C 94,44 102,39 103,26" stroke="url(#gold-metallic-logo)" strokeWidth="2" strokeLinecap="round" />
-              <path d="M 84,31 C 99,28 104,18 102,8" stroke="url(#gold-metallic-logo)" strokeWidth="1.5" strokeLinecap="round" />
-
-              {/* Peacock Eye nestled at the top right of the feather */}
-              <path
-                d="M 88,32 
-                   C 80,22 78,11 87,6 
-                   C 96,1 104,9 98,21 
-                   C 94,28 90,32 88,32 Z"
-                fill="url(#gold-metallic-logo)"
-              />
-              <path
-                d="M 88,30 
-                   C 82,22 81,13 87,9 
-                   C 93,5 100,11 96,20 
-                   C 93,26 90,30 88,30 Z"
-                fill="url(#peacock-teal)"
-              />
-              <path
-                d="M 88,28 
-                   C 84,22 83,15 87,12 
-                   C 91,9 96,13 94,19 
-                   C 91,24 89,28 88,28 Z"
-                fill="url(#emerald-core)"
-              />
-              <path
-                d="M 89,25 
-                   C 86,21 86,17 89,14 
-                   C 92,11 95,15 93,20 
-                   C 91,23 90,25 89,25 Z"
-                fill="#00c49f"
-              />
-              <circle cx="91.5" cy="17.5" r="1.5" fill="#eafdf8" />
-            </svg>
-
-            {/* Brand Typography & Slogan Column */}
-            <div className="flex flex-col items-center text-center -mt-0.5">
-              <span className={`font-serif text-lg xs:text-xl md:text-[26px] font-normal tracking-[-0.09em] uppercase select-none leading-none transition-colors duration-300 ${
-                isDarkHeroOverlay 
-                  ? 'text-white group-hover:text-stone-300' 
-                  : 'text-[#1c1917] group-hover:text-stone-600'
-              }`}>
-                VIVIDHRA
-              </span>
-              <span className={`hidden xs:block text-[7.5px] md:text-[8px] tracking-[0.25em] uppercase font-outfit font-light mt-1.5 transition-colors duration-300 ${
-                isDarkHeroOverlay ? 'text-stone-300/80' : 'text-[#78716c]'
-              }`}>
-                Dress with purpose
-              </span>
-            </div>
+            VIVIDHRA
           </button>
         </div>
 
-        {/* Right Side: Quick Utilities */}
-        <div className="flex items-center space-x-1 xs:space-x-2 sm:space-x-4 md:space-x-5">
-          {/* Search Trigger */}
-          <button
-            onClick={openSearch}
-            className={`hidden sm:block p-1.5 rounded-full transition-all cursor-pointer ${
-              isDarkHeroOverlay 
-                ? 'text-stone-200 hover:text-white hover:bg-white/10' 
-                : 'text-[#57534e] hover:text-[#1c1917] hover:bg-[#f5f5f4]'
-            }`}
-            title="Search products..."
-          >
-            <Search className="w-4.5 h-4.5" />
-          </button>
-
-          {/* AI Stylist Quick Access */}
-          <button
-            onClick={() => setActiveView('stylist')}
-            className={`hidden md:flex items-center space-x-1 px-3 py-1 text-[10px] uppercase tracking-wider rounded-full font-mono font-medium transition-all cursor-pointer ${
-              isDarkHeroOverlay
-                ? 'bg-white/10 text-stone-200 hover:bg-white/20'
-                : 'bg-[#c2a46c]/10 text-[#a0834c] hover:bg-[#c2a46c]/15'
-            }`}
-            title="AI Atelier Stylist"
-          >
-            <Sparkles className={`w-3.5 h-3.5 ${isDarkHeroOverlay ? 'text-[#dfba73]' : 'text-[#c2a46c]'}`} />
-            <span>AI Stylist</span>
-          </button>
+        {/* Right Side: Quick Utilities - fully visible on all devices per user request */}
+        <div className="flex items-center space-x-1 xs:space-x-1.5 sm:space-x-3 md:space-x-4">
+          {/* Real Inline Search Bar Input */}
+          <div className="relative flex items-center">
+            <input
+              type="text"
+              placeholder="Search clothes..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                // Force return to shop list to show instant search results
+                if (activeView !== 'home') {
+                  setActiveView('home');
+                }
+              }}
+              className={`pl-7 pr-2.5 py-1 rounded-full text-[11px] sm:text-xs transition-all w-20 xs:w-28 sm:w-44 md:w-56 lg:w-64 border outline-none font-sans focus:ring-1 focus:ring-[#c2a46c] focus:border-[#c2a46c] ${
+                isDarkHeroOverlay
+                  ? 'bg-white/15 text-white placeholder-stone-300 border-white/20'
+                  : 'bg-stone-100 text-stone-900 placeholder-stone-500 border-stone-200'
+              }`}
+            />
+            <Search className={`w-3 h-3 sm:w-3.5 sm:h-3.5 absolute left-2 pointer-events-none ${isDarkHeroOverlay ? 'text-stone-300' : 'text-stone-500'}`} />
+          </div>
 
           {/* Wishlist Trigger */}
           <button
             onClick={openWishlist}
-            className={`hidden sm:block p-1.5 rounded-full transition-all relative cursor-pointer ${
+            className={`p-1.5 rounded-full transition-all relative cursor-pointer ${
               isDarkHeroOverlay 
                 ? 'text-stone-200 hover:text-white hover:bg-white/10' 
                 : 'text-[#57534e] hover:text-[#1c1917] hover:bg-[#f5f5f4]'
             }`}
             title="Wishlist"
           >
-            <Heart className="w-4.5 h-4.5" />
+            <Heart className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             {wishlist.length > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-[#c2a46c] text-[#fafaf9] text-[8px] font-mono w-4 h-4 rounded-full flex items-center justify-center font-bold">
+              <span className="absolute -top-0.5 -right-0.5 bg-[#c2a46c] text-[#fafaf9] text-[8px] font-mono w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center font-bold">
                 {wishlist.length}
               </span>
             )}
@@ -368,9 +260,9 @@ export default function Header({
             }`}
             title="Shopping Cart"
           >
-            <ShoppingBag className="w-4.5 h-4.5" />
+            <ShoppingBag className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             {totalCartItems > 0 && (
-              <span className={`absolute -top-0.5 -right-0.5 text-[#fafaf9] text-[8px] font-mono w-4 h-4 rounded-full flex items-center justify-center font-bold ${
+              <span className={`absolute -top-0.5 -right-0.5 text-[#fafaf9] text-[8px] font-mono w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center font-bold ${
                 isDarkHeroOverlay ? 'bg-[#dfba73]' : 'bg-[#c2a46c]'
               }`}>
                 {totalCartItems}
@@ -381,14 +273,14 @@ export default function Header({
           {/* User Profile / Dashboard trigger */}
           <button
             onClick={() => setActiveView('profile')}
-            className={`hidden sm:block p-1.5 rounded-full transition-all relative cursor-pointer ${
+            className={`p-1.5 rounded-full transition-all relative cursor-pointer ${
               isDarkHeroOverlay 
                 ? 'text-stone-200 hover:text-white hover:bg-white/10' 
                 : 'text-[#57534e] hover:text-[#1c1917] hover:bg-[#f5f5f4]'
             }`}
             title="My Fit Profile & Account"
           >
-            <User className="w-4.5 h-4.5" />
+            <User className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             {user?.role === 'admin' && (
               <span className="absolute bottom-0 right-0 bg-[#0f766e] w-1.5 h-1.5 rounded-full" />
             )}

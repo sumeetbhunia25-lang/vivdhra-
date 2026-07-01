@@ -46,6 +46,7 @@ import AISilhouetteStudio from './components/AISilhouetteStudio';
 import PremiumHero from './components/PremiumHero';
 import OrderJourneyTracker from './components/OrderJourneyTracker';
 import CollectionDrawer, { collectionCategories } from './components/CollectionDrawer';
+import { ReactHelmet } from './components/ReactHelmet';
 
 const categoriesList = [
   { id: 'all', label: 'All Items', image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=200' },
@@ -63,7 +64,7 @@ export default function App() {
   });
 
   // Navigation & Core views
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(false);
   const [activeView, setActiveView] = useState<'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop'>('home');
   const [profileSubTab, setProfileSubTab] = useState<'ai-silhouette' | 'profile-form' | 'order-tracking'>('ai-silhouette');
   const [user, setUser] = useState<UserAccount | null>({
@@ -652,6 +653,11 @@ export default function App() {
 
   return (
     <div className="relative min-h-screen bg-[#FDFCFB] text-[#1A1A1A] selection:bg-[#78716c]/20 selection:text-[#1c1917] antialiased">
+      <ReactHelmet 
+        activeView={activeView}
+        selectedProduct={selectedProduct}
+        selectedCategory={selectedCategory}
+      />
       
       <AnimatePresence>
         {showIntro && (
@@ -689,6 +695,8 @@ export default function App() {
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         products={products}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
       />
 
       <CollectionDrawer
@@ -830,13 +838,13 @@ export default function App() {
                   </span>
                 </div>
 
-                {/* Products Zara Style Grid */}
+                {/* Products Grid - Amazon Style fully visible vertical layout */}
                 {filteredProducts.length === 0 ? (
                   <div className="text-center py-20 bg-white rounded-2xl border border-[#e7e5e4]">
                     <p className="text-sm text-[#78716c] font-outfit">No garments found matching criteria.</p>
                   </div>
                 ) : (
-                  <div ref={productGridRef} className="flex overflow-x-auto pb-6 gap-6 snap-x snap-mandatory scrollbar-none w-full">
+                  <div ref={productGridRef} className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 w-full">
                     {filteredProducts.map((prod) => (
                       <ZaraStyleProductCard
                         key={prod.id}
@@ -845,7 +853,7 @@ export default function App() {
                         onWishlistToggle={handleToggleWishlist}
                         isWishlisted={wishlist.some((w) => w.product.id === prod.id)}
                         onQuickView={(p) => setSelectedProduct(p)}
-                        className="flex-none w-[315px] sm:w-[380px] md:w-[410px] lg:w-[440px] snap-start gsap-product-card opacity-0"
+                        className="gsap-product-card opacity-0 h-full"
                       />
                     ))}
                   </div>

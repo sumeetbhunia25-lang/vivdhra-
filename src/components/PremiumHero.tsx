@@ -185,12 +185,8 @@ export default function PremiumHero({ onBrowse, onExplorePhilosophy }: PremiumHe
         </motion.div>
       </motion.div>
 
-      {/* 3. Top Accent Line */}
-      <div className="relative z-30 p-6 flex justify-between items-center text-[9px] tracking-[0.3em] text-stone-300 font-mono uppercase">
-        <span>MUMBAI &bull; COUTURE</span>
-        <span className="hidden sm:inline text-stone-400">AUTUMN/WINTER COLLECTION</span>
-        <span>SUSTAINABLE ATELIER</span>
-      </div>
+      {/* 3. Empty Space / Spacer */}
+      <div className="relative z-30 p-3" />
 
       {/* 4. Center-Aligned Editorial Brand Content */}
       <motion.div 
@@ -352,35 +348,11 @@ export default function PremiumHero({ onBrowse, onExplorePhilosophy }: PremiumHe
 
       </motion.div>
 
-      {/* 5. Scroll Indicator & Ambient Coordinates */}
+      {/* 5. Scroll Indicator & Ambient Coordinates (Emptied per request) */}
       <div 
         ref={scrollIndicatorRef}
-        className="relative z-30 p-6 flex flex-col items-center justify-center space-y-4 text-[9px] tracking-widest text-stone-400 font-mono"
-      >
-        <div className="flex justify-between items-center w-full">
-          <span>© VIVIDHRA</span>
-          
-          {/* Breathing Mouse Scroll Pointer Indicator */}
-          <div className="flex flex-col items-center space-y-1.5 opacity-70">
-            <motion.div
-              animate={{
-                y: [0, 6, 0],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="w-5 h-8 border border-white/40 rounded-full flex justify-center p-1"
-            >
-              <div className="w-1 h-2 bg-[#c2a46c] rounded-full" />
-            </motion.div>
-            <span className="text-[7.5px] tracking-[0.15em] text-stone-400 uppercase">SCROLL</span>
-          </div>
-
-          <span>MUMBAI, IN</span>
-        </div>
-      </div>
+        className="relative z-30 p-2"
+      />
 
     </div>
   );
