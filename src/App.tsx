@@ -45,6 +45,13 @@ import ZaraOpeningIntro from './components/ZaraOpeningIntro';
 import AISilhouetteStudio from './components/AISilhouetteStudio';
 import PremiumHero from './components/PremiumHero';
 import OrderJourneyTracker from './components/OrderJourneyTracker';
+import CollectionDrawer, { collectionCategories } from './components/CollectionDrawer';
+
+const categoriesList = [
+  { id: 'all', label: 'All Items', image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=200' },
+  { id: 'atelier-ai', label: 'AI Atelier Picks', image: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=200' },
+  ...collectionCategories
+];
 
 export default function App() {
   // Scroll progress for Home & Story view
@@ -98,6 +105,7 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCollectionDrawerOpen, setIsCollectionDrawerOpen] = useState(false);
   const [isAIStylistOpen, setIsAIStylistOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   
@@ -588,16 +596,57 @@ export default function App() {
     }
   };
 
-  // Filter products by search and category
+  // Filter products by search and category mapping dynamically for all 17 categories
   const filteredProducts = products.filter((p) => {
-    const matchCategory =
-      selectedCategory === 'all' ||
-      p.category === selectedCategory ||
-      (selectedCategory === 'atelier-ai' && ['p14', 'p15', 'p16', 'p17', 'p18', 'p19'].includes(p.id));
+    let matchCategory = false;
+    
+    if (selectedCategory === 'all') {
+      matchCategory = true;
+    } else if (selectedCategory === 'atelier-ai') {
+      matchCategory = ['p14', 'p15', 'p16', 'p17', 'p18', 'p19'].includes(p.id);
+    } else if (selectedCategory === 'new-arrivals') {
+      matchCategory = p.isTrending || p.id === 'p14' || p.id === 'p15';
+    } else if (selectedCategory === 'best-sellers') {
+      matchCategory = p.isTrending && p.price > 1600;
+    } else if (selectedCategory === 'dresses') {
+      matchCategory = p.category === 'dresses';
+    } else if (selectedCategory === 'tops') {
+      matchCategory = p.category === 'tops';
+    } else if (selectedCategory === 'co-ords') {
+      matchCategory = p.category === 'co-ords';
+    } else if (selectedCategory === 'bottoms') {
+      matchCategory = p.category === 'trousers';
+    } else if (selectedCategory === 'kurtis') {
+      matchCategory = p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('drape');
+    } else if (selectedCategory === 'ethnic-sets') {
+      matchCategory = p.name.toLowerCase().includes('set') || p.name.toLowerCase().includes('asymmetric');
+    } else if (selectedCategory === 'party-wear') {
+      matchCategory = p.name.toLowerCase().includes('corset') || p.name.toLowerCase().includes('satin') || p.name.toLowerCase().includes('wine') || p.category === 'blazers';
+    } else if (selectedCategory === 'office-wear') {
+      matchCategory = p.category === 'blazers' || p.category === 'trousers';
+    } else if (selectedCategory === 'daily-wear') {
+      matchCategory = p.category === 'tops' || p.category === 'co-ords';
+    } else if (selectedCategory === 'vacation-wear') {
+      matchCategory = p.category === 'vacation' || p.materials.toLowerCase().includes('linen');
+    } else if (selectedCategory === 'college-wear') {
+      matchCategory = p.price < 1800;
+    } else if (selectedCategory === 'house-wear') {
+      matchCategory = p.materials.toLowerCase().includes('cotton') && p.category === 'tops';
+    } else if (selectedCategory === 'minimal-collection') {
+      matchCategory = p.materials.toLowerCase().includes('linen') || p.category === 'blazers';
+    } else if (selectedCategory === 'sustainable-picks') {
+      matchCategory = p.materials.toLowerCase().includes('organic') || p.materials.toLowerCase().includes('gots') || p.materials.toLowerCase().includes('eco');
+    } else if (selectedCategory === 'sale') {
+      matchCategory = p.originalPrice > p.price;
+    } else {
+      matchCategory = p.category === selectedCategory;
+    }
+
     const matchSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.materials.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
     return matchCategory && matchSearch;
   });
 
@@ -633,6 +682,25 @@ export default function App() {
           setActiveView(v);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
+        openCart={() => setIsCartOpen(true)}
+        openWishlist={() => setIsWishlistOpen(true)}
+        openSearch={() => setIsSearchOpen(true)}
+        onOpenCollectionMenu={() => setIsCollectionDrawerOpen(true)}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        products={products}
+      />
+
+      <CollectionDrawer
+        isOpen={isCollectionDrawerOpen}
+        onClose={() => setIsCollectionDrawerOpen(false)}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        setActiveView={setActiveView}
+        cart={cart}
+        wishlist={wishlist}
+        user={user}
+        products={products}
         openCart={() => setIsCartOpen(true)}
         openWishlist={() => setIsWishlistOpen(true)}
         openSearch={() => setIsSearchOpen(true)}
@@ -746,43 +814,20 @@ export default function App() {
                 </div>
               </section>
 
-              {/* Category Filter Rail (Pristine Bento Card) */}
+              {/* Products Catalog Grid */}
               <section id="collection-grid" className="mx-4 md:mx-10 bg-white border border-gray-100 rounded-3xl p-6 md:p-10 shadow-xs scroll-mt-24">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-[#e7e5e4] pb-6">
+                <div className="mb-8 border-b border-[#e7e5e4] pb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                   <div>
                     <span className="text-[10px] uppercase tracking-widest font-mono text-[#c2a46c] font-semibold">
-                      THE COMMODITY REGISTRY
+                      VIVIDHRA SELECTION
                     </span>
                     <h2 className="serif-header text-2xl md:text-4xl font-bold text-[#1c1917] mt-1.5">
-                      Mindful Silhouettes
+                      {categoriesList.find(c => c.id === selectedCategory)?.label || 'Our Collection'}
                     </h2>
                   </div>
-
-                  {/* Category Tags (Dresses, Co-ords, Tops, Trousers, Blazers) */}
-                  <div className="flex flex-wrap gap-2.5">
-                    {[
-                      { id: 'all', label: 'All Items' },
-                      { id: 'atelier-ai', label: '✨ AI Atelier Picks' },
-                      { id: 'dresses', label: 'Dresses' },
-                      { id: 'co-ords', label: 'Co-ords' },
-                      { id: 'tops', label: 'Tops' },
-                      { id: 'trousers', label: 'Trousers' },
-                      { id: 'blazers', label: 'Blazers' },
-                      { id: 'vacation', label: 'Vacation' },
-                    ].map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => setSelectedCategory(cat.id)}
-                        className={`px-4 py-1.5 rounded-full text-xs font-outfit font-medium transition-all duration-300 cursor-pointer border ${
-                          selectedCategory === cat.id
-                            ? 'bg-[#1c1917] text-white border-[#1c1917] shadow-xs'
-                            : 'bg-white text-[#57534e] border-[#e7e5e4] hover:border-[#78716c]'
-                        }`}
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
-                  </div>
+                  <span className="text-xs font-mono text-stone-500 bg-stone-100 px-3.5 py-1.5 rounded-full font-semibold self-start sm:self-auto">
+                    {filteredProducts.length} {filteredProducts.length === 1 ? 'Garment' : 'Garments'} Available
+                  </span>
                 </div>
 
                 {/* Products Zara Style Grid */}
@@ -1258,26 +1303,41 @@ export default function App() {
       </main>
 
       {/* 3. Global Styling Assistant Floating Widget */}
-      <div className="fixed bottom-6 right-6 z-40">
+      <AnimatePresence>
         {isAIStylistOpen ? (
-          <div className="w-[360px] md:w-[420px] h-[520px] shadow-2xl relative animate-fade-in">
-            <AIStylist
-              fitProfile={user?.fitProfile}
-              currentProduct={selectedProduct}
-              onClose={() => setIsAIStylistOpen(false)}
+          <div className="fixed inset-0 sm:inset-auto sm:bottom-6 sm:right-6 z-50 flex items-center justify-center p-4 sm:p-0">
+            {/* Backdrop for mobile to focus of chat panel */}
+            <div 
+              className="absolute inset-0 bg-black/60 backdrop-blur-xs sm:hidden"
+              onClick={() => setIsAIStylistOpen(false)}
             />
+            <motion.div 
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-md sm:w-[420px] h-[82vh] sm:h-[540px] shadow-2xl relative bg-[#fafaf9] rounded-2xl overflow-hidden flex flex-col z-10 border border-[#e7e5e4]"
+            >
+              <AIStylist
+                fitProfile={user?.fitProfile}
+                currentProduct={selectedProduct}
+                onClose={() => setIsAIStylistOpen(false)}
+              />
+            </motion.div>
           </div>
         ) : (
-          <button
-            onClick={() => setIsAIStylistOpen(true)}
-            className="flex items-center space-x-2 px-4.5 py-3.5 bg-[#1c1917] hover:bg-[#3c3734] text-[#fafaf9] rounded-full shadow-2xl transition-all cursor-pointer border border-[#c2a46c]/40 group hover:scale-105"
-            title="Open AI Atelier Stylist"
-          >
-            <Sparkles className="w-4 h-4 text-[#c2a46c] animate-pulse" />
-            <span className="text-xs font-outfit uppercase tracking-widest font-semibold">AI Stylist</span>
-          </button>
+          <div className="fixed bottom-6 right-6 z-40">
+            <button
+              onClick={() => setIsAIStylistOpen(true)}
+              className="flex items-center space-x-2 px-4.5 py-3.5 bg-[#1c1917] hover:bg-[#3c3734] text-[#fafaf9] rounded-full shadow-2xl transition-all cursor-pointer border border-[#c2a46c]/40 group hover:scale-105 animate-fade-in"
+              title="Open AI Atelier Stylist"
+            >
+              <Sparkles className="w-4 h-4 text-[#c2a46c] animate-pulse" />
+              <span className="text-xs font-outfit uppercase tracking-widest font-semibold">AI Stylist</span>
+            </button>
+          </div>
         )}
-      </div>
+      </AnimatePresence>
 
       {/* 4. Product Detail Modal */}
       <AnimatePresence>

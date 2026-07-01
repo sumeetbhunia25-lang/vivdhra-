@@ -494,7 +494,7 @@ let db = {
       wishlist: [],
       cart: []
     }
-  }
+  } as Record<string, any>
 };
 
 if (fs.existsSync(DB_PATH)) {

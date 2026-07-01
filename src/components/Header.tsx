@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ShoppingBag, Heart, User, Search, Menu, X, Sparkles, Gift } from 'lucide-react';
-import { CartItem, WishlistItem, UserAccount } from '../types';
+import { ShoppingBag, Heart, User, Search, Menu, X, Sparkles, Gift, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { CartItem, WishlistItem, UserAccount, Product } from '../types';
 
 interface HeaderProps {
   cart: CartItem[];
@@ -11,6 +12,10 @@ interface HeaderProps {
   openCart: () => void;
   openWishlist: () => void;
   openSearch: () => void;
+  onOpenCollectionMenu: () => void;
+  selectedCategory?: string;
+  setSelectedCategory?: (cat: string) => void;
+  products?: Product[];
 }
 
 export default function Header({
@@ -22,9 +27,81 @@ export default function Header({
   openCart,
   openWishlist,
   openSearch,
+  onOpenCollectionMenu,
+  selectedCategory,
+  setSelectedCategory,
+  products,
 }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isCollectionsHovered, setIsCollectionsHovered] = useState(false);
+  const [isMobileCollectionsOpen, setIsMobileCollectionsOpen] = useState(false);
+
+  const megamenuGroups = [
+    {
+      title: "Curated Drops",
+      items: [
+        { id: 'new-arrivals', label: 'New Arrivals' },
+        { id: 'best-sellers', label: 'Best Sellers' },
+        { id: 'sustainable-picks', label: 'Sustainable Picks' },
+        { id: 'minimal-collection', label: 'Minimal Collection' },
+        { id: 'sale', label: 'Sale' }
+      ]
+    },
+    {
+      title: "Key Silhouettes",
+      items: [
+        { id: 'dresses', label: 'Dresses' },
+        { id: 'tops', label: 'Tops' },
+        { id: 'co-ords', label: 'Co-ords' },
+        { id: 'bottoms', label: 'Bottoms' }
+      ]
+    },
+    {
+      title: "Ethnic & Fusion",
+      items: [
+        { id: 'kurtis', label: 'Kurtis' },
+        { id: 'ethnic-sets', label: 'Ethnic Sets' }
+      ]
+    },
+    {
+      title: "By Occasion",
+      items: [
+        { id: 'daily-wear', label: 'Daily Wear' },
+        { id: 'office-wear', label: 'Office Wear' },
+        { id: 'party-wear', label: 'Party Wear' },
+        { id: 'vacation-wear', label: 'Vacation Wear' },
+        { id: 'college-wear', label: 'College Wear' },
+        { id: 'house-wear', label: 'House Wear' }
+      ]
+    }
+  ];
+
+  const getCategoryCount = (catId: string) => {
+    if (!products) return 0;
+    return products.filter((p) => {
+      if (catId === 'all') return true;
+      if (catId === 'atelier-ai') return ['p14', 'p15', 'p16', 'p17', 'p18', 'p19'].includes(p.id);
+      if (catId === 'new-arrivals') return p.isTrending || p.id === 'p14' || p.id === 'p15';
+      if (catId === 'best-sellers') return p.isTrending && p.price > 1600;
+      if (catId === 'dresses') return p.category === 'dresses';
+      if (catId === 'tops') return p.category === 'tops';
+      if (catId === 'co-ords') return p.category === 'co-ords';
+      if (catId === 'bottoms') return p.category === 'trousers';
+      if (catId === 'kurtis') return p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('drape');
+      if (catId === 'ethnic-sets') return p.name.toLowerCase().includes('set') || p.name.toLowerCase().includes('asymmetric');
+      if (catId === 'party-wear') return p.name.toLowerCase().includes('corset') || p.name.toLowerCase().includes('satin') || p.name.toLowerCase().includes('wine') || p.category === 'blazers';
+      if (catId === 'office-wear') return p.category === 'blazers' || p.category === 'trousers';
+      if (catId === 'daily-wear') return p.category === 'tops' || p.category === 'co-ords';
+      if (catId === 'vacation-wear') return p.category === 'vacation' || p.materials.toLowerCase().includes('linen');
+      if (catId === 'college-wear') return p.price < 1800;
+      if (catId === 'house-wear') return p.materials.toLowerCase().includes('cotton') && p.category === 'tops';
+      if (catId === 'minimal-collection') return p.materials.toLowerCase().includes('linen') || p.category === 'blazers';
+      if (catId === 'sustainable-picks') return p.materials.toLowerCase().includes('organic') || p.materials.toLowerCase().includes('gots') || p.materials.toLowerCase().includes('eco');
+      if (catId === 'sale') return p.originalPrice > p.price;
+      return p.category === catId;
+    }).length;
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,7 +114,7 @@ export default function Header({
   const totalCartItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   const navItems = [
-    { label: 'Collection', view: 'home' as const },
+    { label: 'Collections', view: 'home' as const },
     { label: 'Our Story', view: 'story' as const },
     { label: 'AI Stylist', view: 'stylist' as const },
     { label: 'Fit Profile', view: 'profile' as const },
@@ -48,13 +125,18 @@ export default function Header({
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        isScrolled
-          ? 'bg-[#FDFCFB]/85 backdrop-blur-md border-b border-gray-200/80 py-3 shadow-xs'
-          : 'bg-transparent py-5'
+      className={`fixed top-0 left-0 right-0 transition-all duration-300 ${
+        mobileMenuOpen
+          ? 'inset-0 z-[100] h-screen w-screen bg-[#FDFCFB] overflow-y-auto'
+          : `z-50 ${
+              isScrolled
+                ? 'bg-[#FDFCFB]/85 backdrop-blur-md border-b border-gray-200/80 py-3 shadow-xs'
+                : 'bg-transparent py-5'
+            }`
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between">
+      {!mobileMenuOpen && (
+        <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between">
         
         {/* Left Side: Navigation Links (Desktop) */}
         <nav className="hidden lg:flex items-center space-x-8">
@@ -63,7 +145,23 @@ export default function Header({
             return (
               <button
                 key={item.view}
-                onClick={() => setActiveView(item.view)}
+                onClick={() => {
+                  if (item.label === 'Collections') {
+                    onOpenCollectionMenu();
+                  } else {
+                    setActiveView(item.view);
+                  }
+                }}
+                onMouseEnter={() => {
+                  if (item.label === 'Collections') {
+                    setIsCollectionsHovered(true);
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (item.label === 'Collections') {
+                    setIsCollectionsHovered(false);
+                  }
+                }}
                 className={`text-xs uppercase tracking-widest font-outfit font-medium transition-all duration-300 relative py-1 cursor-pointer ${
                   isActive 
                     ? (isDarkHeroOverlay ? 'text-white' : 'text-[#1c1917]') 
@@ -298,10 +396,11 @@ export default function Header({
         </div>
 
       </div>
+      )}
 
       {/* Full-screen Mobile Navigation Transition */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-[#FDFCFB] z-50 flex flex-col justify-between px-6 py-8 animate-fade-in lg:hidden">
+        <div className="absolute inset-0 bg-[#FDFCFB] z-50 flex flex-col justify-between px-6 py-8 animate-fade-in lg:hidden min-h-screen">
           <div>
             <div className="flex items-center justify-between mb-12">
               <span className="serif-header text-xl font-normal tracking-[-0.08em] text-[#1c1917] uppercase">
@@ -315,28 +414,96 @@ export default function Header({
               </button>
             </div>
 
-             <nav className="flex flex-col space-y-4">
-              {navItems.map((item) => {
-                const isActive = activeView === item.view;
-                return (
-                  <button
-                    key={item.view}
-                    onClick={() => {
-                      setActiveView(item.view);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`serif-header text-xl text-left font-light tracking-[0.05em] transition-all duration-300 py-3.5 border-b border-stone-100 flex items-center justify-between cursor-pointer ${
-                      isActive 
-                        ? 'text-[#1c1917] font-normal border-l-2 border-l-[#1c1917] pl-3 bg-stone-50/50' 
-                        : 'text-[#57534e] hover:text-[#1c1917] pl-1'
-                    }`}
-                  >
-                    <span>{item.label}</span>
-                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#c2a46c]" />}
-                  </button>
-                );
-              })}
-            </nav>
+              <nav className="flex flex-col space-y-2 overflow-y-auto max-h-[60vh] pr-1">
+                {navItems.map((item) => {
+                  const isActive = activeView === item.view;
+                  if (item.label === 'Collections') {
+                    return (
+                      <div key={item.view} className="border-b border-stone-100 py-1.5">
+                        <button
+                          onClick={() => {
+                            setIsMobileCollectionsOpen(!isMobileCollectionsOpen);
+                          }}
+                          className={`w-full serif-header text-xl text-left font-light tracking-[0.05em] transition-all duration-300 py-2 flex items-center justify-between cursor-pointer ${
+                            isMobileCollectionsOpen ? 'text-[#1c1917] font-normal pl-2' : 'text-[#57534e] hover:text-[#1c1917] pl-1'
+                          }`}
+                        >
+                          <span>{item.label}</span>
+                          <span className={`transform transition-transform duration-300 ${isMobileCollectionsOpen ? 'rotate-90 text-[#c2a46c]' : 'text-stone-400'}`}>
+                            <ChevronRight className="w-4 h-4" />
+                          </span>
+                        </button>
+                        
+                        <AnimatePresence>
+                          {isMobileCollectionsOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.25, ease: "easeInOut" }}
+                              className="overflow-hidden pl-4 pr-2 mt-2 space-y-4 pb-2"
+                            >
+                              {megamenuGroups.map((group) => (
+                                <div key={group.title} className="space-y-1.5">
+                                  <h4 className="text-[9px] uppercase font-mono tracking-widest text-[#c2a46c] font-bold">
+                                    {group.title}
+                                  </h4>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {group.items.map((subcat) => {
+                                      const count = getCategoryCount(subcat.id);
+                                      return (
+                                        <button
+                                          key={subcat.id}
+                                          onClick={() => {
+                                            if (setSelectedCategory) {
+                                              setSelectedCategory(subcat.id);
+                                            }
+                                            setActiveView('home');
+                                            setMobileMenuOpen(false);
+                                            setIsMobileCollectionsOpen(false);
+                                            setTimeout(() => {
+                                              const grid = document.getElementById('collection-grid');
+                                              grid?.scrollIntoView({ behavior: 'smooth' });
+                                            }, 100);
+                                          }}
+                                          className="text-[#57534e] hover:text-[#1c1917] text-xs font-outfit py-1.5 text-left flex items-center justify-between group cursor-pointer pr-1"
+                                        >
+                                          <span className="truncate pr-1">{subcat.label}</span>
+                                          <span className="text-[8px] font-mono text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">
+                                            {count}
+                                          </span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <button
+                      key={item.view}
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setActiveView(item.view);
+                      }}
+                      className={`serif-header text-xl text-left font-light tracking-[0.05em] transition-all duration-300 py-3.5 border-b border-stone-100 flex items-center justify-between cursor-pointer ${
+                        isActive 
+                          ? 'text-[#1c1917] font-normal border-l-2 border-l-[#1c1917] pl-3 bg-stone-50/50' 
+                          : 'text-[#57534e] hover:text-[#1c1917] pl-1'
+                      }`}
+                    >
+                      <span>{item.label}</span>
+                      {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#c2a46c]" />}
+                    </button>
+                  );
+                })}
+              </nav>
 
             {/* Mobile Utility Actions in Drawer */}
             <div className="mt-8 pt-6 border-t border-stone-200/60 flex items-center justify-around">
@@ -391,6 +558,60 @@ export default function Header({
           </div>
         </div>
       )}
+
+      <AnimatePresence>
+        {isCollectionsHovered && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onMouseEnter={() => setIsCollectionsHovered(true)}
+            onMouseLeave={() => setIsCollectionsHovered(false)}
+            className="absolute left-0 right-0 top-full bg-[#FDFCFB]/95 backdrop-blur-md border-b border-stone-200/80 shadow-lg z-40 py-8 px-6 hidden lg:block"
+          >
+            <div className="max-w-7xl mx-auto grid grid-cols-4 gap-8">
+              {megamenuGroups.map((group) => (
+                <div key={group.title} className="space-y-4">
+                  <h4 className="text-[10px] uppercase font-mono tracking-[0.2em] text-[#c2a46c] font-bold">
+                    {group.title}
+                  </h4>
+                  <ul className="space-y-2.5">
+                    {group.items.map((cat) => {
+                      const count = getCategoryCount(cat.id);
+                      return (
+                        <li key={cat.id}>
+                          <button
+                            onClick={() => {
+                              if (setSelectedCategory) {
+                                setSelectedCategory(cat.id);
+                              }
+                              setActiveView('home');
+                              setIsCollectionsHovered(false);
+                              setTimeout(() => {
+                                const grid = document.getElementById('collection-grid');
+                                grid?.scrollIntoView({ behavior: 'smooth' });
+                              }, 100);
+                            }}
+                            className="text-stone-600 hover:text-[#1c1917] text-xs font-outfit tracking-wide flex items-center justify-between w-full group/item text-left py-1 cursor-pointer"
+                          >
+                            <span className="font-medium group-hover/item:translate-x-1 transition-transform duration-300">
+                              {cat.label}
+                            </span>
+                            <span className="text-[9px] font-mono text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full group-hover/item:bg-[#c2a46c]/10 group-hover/item:text-[#c2a46c] transition-colors">
+                              {count}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

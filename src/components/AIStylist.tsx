@@ -131,7 +131,7 @@ How may I assist you with your wardrobe selections, custom sizes, or fabric stru
         <div className="bg-[#f5f5f4] border-b border-[#e7e5e4] px-4 py-2 flex items-center justify-between text-[10px] text-[#57534e]">
           <div className="flex items-center space-x-2">
             <span className="w-1.5 h-1.5 bg-[#0f766e] rounded-full animate-ping" />
-            <p className="font-outfit truncate max-w-[260px]">
+            <p className="font-outfit truncate max-w-[140px] xs:max-w-[180px] sm:max-w-[240px]">
               Active context:{' '}
               <span className="font-bold text-[#1c1917]">
                 {[

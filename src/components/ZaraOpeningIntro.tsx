@@ -38,23 +38,22 @@ export default function ZaraOpeningIntro({ onEnter }: ZaraOpeningIntroProps) {
     }
   }, [stage]);
 
-  return (
-    <div className="fixed inset-0 z-100 bg-[#FDFCFB] flex flex-col justify-between overflow-hidden select-none">
-      
-      {/* Top minimalistic header line */}
-      <div className="p-6 flex justify-between items-center z-50 text-[10px] tracking-[0.25em] text-stone-500 font-mono uppercase">
-        <span>VIVIDHRA ATELIER</span>
-        <span>A/W WOMENSWEAR EDIT</span>
-        <button 
-          onClick={onEnter} 
-          className="text-stone-900 hover:text-[#c2a46c] hover:underline cursor-pointer transition-colors font-bold font-sans"
-        >
-          SKIP INTRO
-        </button>
-      </div>
+  const handleScreenClick = () => {
+    if (stage === 'brand') {
+      setStage('campaign');
+    } else {
+      onEnter();
+    }
+  };
 
+  return (
+    <div 
+      onClick={handleScreenClick}
+      className="fixed inset-0 z-100 bg-[#FDFCFB] flex flex-col justify-center items-center overflow-hidden select-none cursor-pointer"
+    >
+      
       {/* Main Interactive Stage */}
-      <div className="relative flex-1 flex flex-col items-center justify-center">
+      <div className="relative w-full flex-1 flex flex-col items-center justify-center">
         
         {/* Animated Brand Introduction (Stage 1) */}
         <AnimatePresence mode="wait">
@@ -118,7 +117,7 @@ export default function ZaraOpeningIntro({ onEnter }: ZaraOpeningIntroProps) {
                     stroke="url(#gold-metallic-logo-intro)"
                     strokeWidth="4"
                     strokeLinecap="round"
-                  />
+                    />
 
                   {/* Elegant gold feather barbs */}
                   {/* Left side */}
@@ -177,14 +176,6 @@ export default function ZaraOpeningIntro({ onEnter }: ZaraOpeningIntroProps) {
               >
                 VIVIDHRA
               </motion.h1>
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.0, duration: 0.8 }}
-                className="text-[10px] tracking-[0.4em] font-mono text-stone-400 uppercase text-center"
-              >
-                Dress with purpose &bull; Women exclusive
-              </motion.p>
             </motion.div>
           )}
 
@@ -216,14 +207,6 @@ export default function ZaraOpeningIntro({ onEnter }: ZaraOpeningIntroProps) {
               {/* Dynamic Overlay Campaign Elements */}
               <div className="relative z-20 w-full max-w-5xl mx-auto px-6 pb-20 md:pb-28 text-white space-y-6">
                 <div className="space-y-2">
-                  <motion.span
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="text-xs uppercase tracking-[0.4em] font-mono text-[#c2a46c] font-semibold"
-                  >
-                    The Purposeful Fashion Manifesto
-                  </motion.span>
                   <motion.h2
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -233,14 +216,6 @@ export default function ZaraOpeningIntro({ onEnter }: ZaraOpeningIntroProps) {
                     Curated Exclusively <br />
                     For Women
                   </motion.h2>
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.7 }}
-                    className="text-xs md:text-sm text-stone-200 tracking-wider font-light max-w-xl font-sans"
-                  >
-                    Crafting versatile, semi-casual tailoring engineered to travel seamlessly between the boardroom, the college yard, cozy home spaces, and evening celebrations.
-                  </motion.p>
                 </div>
 
                 <motion.div
@@ -250,14 +225,18 @@ export default function ZaraOpeningIntro({ onEnter }: ZaraOpeningIntroProps) {
                   className="pt-4 flex flex-wrap gap-4"
                 >
                   <button
-                    onClick={onEnter}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEnter();
+                    }}
                     className="px-8 py-4 bg-[#FDFCFB] hover:bg-stone-900 hover:text-white text-stone-900 text-xs uppercase tracking-[0.2em] font-bold font-outfit transition-all rounded-full flex items-center space-x-3 cursor-pointer group shadow-2xl"
                   >
                     <span>ENTER COLLECTION</span>
                     <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1.5 transition-transform text-[#c2a46c]" />
                   </button>
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       onEnter();
                     }}
                     className="px-8 py-4 bg-transparent border border-white/30 hover:border-white text-white text-xs uppercase tracking-[0.2em] font-bold font-outfit transition-all rounded-full cursor-pointer"
@@ -269,13 +248,6 @@ export default function ZaraOpeningIntro({ onEnter }: ZaraOpeningIntroProps) {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
-
-      {/* Footer info line with elegant coordinates */}
-      <div className="p-6 flex justify-between items-center z-50 text-[10px] tracking-widest text-stone-400 font-mono">
-        <span>© VIVIDHRA</span>
-        <span className="hidden md:inline">ORGANIC &bull; SUSTAINABLE &bull; PURPOSE-DRIVEN</span>
-        <span>MUMBAI, IN</span>
       </div>
 
     </div>
