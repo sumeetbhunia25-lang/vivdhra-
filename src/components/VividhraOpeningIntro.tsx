@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, ArrowRight } from 'lucide-react';
 
-interface ZaraOpeningIntroProps {
+interface VividhraOpeningIntroProps {
   onEnter: () => void;
 }
 
-export default function ZaraOpeningIntro({ onEnter }: ZaraOpeningIntroProps) {
+export default function VividhraOpeningIntro({ onEnter }: VividhraOpeningIntroProps) {
   const [stage, setStage] = useState<'brand' | 'campaign' | 'ready'>('brand');
 
   useEffect(() => {

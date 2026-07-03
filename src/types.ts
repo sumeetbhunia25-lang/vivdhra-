@@ -8,10 +8,11 @@ export interface Product {
   slogan?: string;
   materials: string;
   care: string;
-  images: string[]; // Two images for Zara-style hover effect
+  images: string[]; // Two images for Vividhra-style hover effect
   sizes: ('XS' | 'S' | 'M' | 'L' | 'XL')[];
   colors: string[];
   inStock: boolean;
+  stock?: number;
   fitType: 'slim' | 'regular' | 'oversized';
   isTrending?: boolean;
 }

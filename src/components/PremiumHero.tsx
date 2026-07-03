@@ -3,13 +3,21 @@ import { motion, useScroll, useTransform } from 'motion/react';
 import gsap from 'gsap';
 import Lenis from 'lenis';
 import { Sparkles, ArrowRight, MousePointer } from 'lucide-react';
+import { Product } from '../types';
 
 interface PremiumHeroProps {
   onBrowse: () => void;
   onExplorePhilosophy: () => void;
+  selectedCategory?: string;
+  products?: Product[];
 }
 
-export default function PremiumHero({ onBrowse, onExplorePhilosophy }: PremiumHeroProps) {
+export default function PremiumHero({ 
+  onBrowse, 
+  onExplorePhilosophy, 
+  selectedCategory = 'all', 
+  products = [] 
+}: PremiumHeroProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -21,6 +29,98 @@ export default function PremiumHero({ onBrowse, onExplorePhilosophy }: PremiumHe
   // Mouse coordinate state for GPU parallax
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
+
+  // Default fallback static background images
+  const FALLBACK_IMAGES = [
+    "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=90&w=2400",
+    "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=90&w=2400",
+    "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&q=90&w=2400",
+    "https://images.unsplash.com/photo-1509319117193-57bab727e09d?auto=format&fit=crop&q=90&w=2400",
+    "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=90&w=2400",
+    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=90&w=2400",
+    "https://images.unsplash.com/photo-1534126511673-b6899657816a?auto=format&fit=crop&q=90&w=2400",
+    "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=90&w=2400"
+  ];
+
+  // Dynamically build collection images from active products matching category
+  const getDynamicImages = () => {
+    if (!products || products.length === 0) return FALLBACK_IMAGES;
+
+    let matchedProducts: Product[] = [];
+    if (!selectedCategory || selectedCategory === 'all') {
+      matchedProducts = products;
+    } else if (selectedCategory === 'atelier-ai') {
+      matchedProducts = products.filter(p => ['p14', 'p15', 'p16', 'p17', 'p18', 'p19'].includes(p.id));
+    } else if (selectedCategory === 'new-arrivals') {
+      matchedProducts = products.filter(p => p.isTrending || p.id === 'p14' || p.id === 'p15');
+    } else if (selectedCategory === 'best-sellers') {
+      matchedProducts = products.filter(p => p.isTrending && p.price > 1600);
+    } else if (selectedCategory === 'dresses') {
+      matchedProducts = products.filter(p => p.category === 'dresses');
+    } else if (selectedCategory === 'tops') {
+      matchedProducts = products.filter(p => p.category === 'tops');
+    } else if (selectedCategory === 'co-ords') {
+      matchedProducts = products.filter(p => p.category === 'co-ords');
+    } else if (selectedCategory === 'bottoms') {
+      matchedProducts = products.filter(p => p.category === 'trousers');
+    } else if (selectedCategory === 'kurtis') {
+      matchedProducts = products.filter(p => p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('drape'));
+    } else if (selectedCategory === 'ethnic-sets') {
+      matchedProducts = products.filter(p => p.name.toLowerCase().includes('set') || p.name.toLowerCase().includes('asymmetric'));
+    } else if (selectedCategory === 'party-wear') {
+      matchedProducts = products.filter(p => p.name.toLowerCase().includes('corset') || p.name.toLowerCase().includes('satin') || p.name.toLowerCase().includes('wine') || p.category === 'blazers');
+    } else if (selectedCategory === 'office-wear') {
+      matchedProducts = products.filter(p => p.category === 'blazers' || p.category === 'trousers');
+    } else if (selectedCategory === 'daily-wear') {
+      matchedProducts = products.filter(p => p.category === 'tops' || p.category === 'co-ords');
+    } else if (selectedCategory === 'vacation-wear') {
+      matchedProducts = products.filter(p => p.category === 'vacation' || p.materials.toLowerCase().includes('linen'));
+    } else if (selectedCategory === 'college-wear') {
+      matchedProducts = products.filter(p => p.price < 1800);
+    } else if (selectedCategory === 'house-wear') {
+      matchedProducts = products.filter(p => p.materials.toLowerCase().includes('cotton') && p.category === 'tops');
+    } else if (selectedCategory === 'minimal-collection') {
+      matchedProducts = products.filter(p => p.materials.toLowerCase().includes('linen') || p.category === 'blazers');
+    } else if (selectedCategory === 'sustainable-picks') {
+      matchedProducts = products.filter(p => p.materials.toLowerCase().includes('organic') || p.materials.toLowerCase().includes('gots') || p.materials.toLowerCase().includes('eco'));
+    } else if (selectedCategory === 'sale') {
+      matchedProducts = products.filter(p => p.originalPrice > p.price);
+    } else {
+      matchedProducts = products.filter(p => p.category === selectedCategory);
+    }
+
+    if (matchedProducts.length === 0) {
+      matchedProducts = products;
+    }
+
+    // Grab unique images from matched products
+    const images: string[] = [];
+    matchedProducts.forEach(p => {
+      if (p.images && p.images[0]) {
+        if (!images.includes(p.images[0])) images.push(p.images[0]);
+      }
+      if (p.images && p.images[1]) {
+        if (!images.includes(p.images[1])) images.push(p.images[1]);
+      }
+    });
+
+    return images.length > 0 ? images.slice(0, 8) : FALLBACK_IMAGES;
+  };
+
+  const COLLECTION_IMAGES = getDynamicImages();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Reset image index to 0 whenever browsed category changes to show its main image instantly
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % COLLECTION_IMAGES.length);
+    }, 5000); // Cycle every 5 seconds
+    return () => clearInterval(timer);
+  }, [COLLECTION_IMAGES.length]);
 
   // Scroll interactive hooks
   const { scrollY } = useScroll();
@@ -166,20 +266,29 @@ export default function PremiumHero({ onBrowse, onExplorePhilosophy }: PremiumHe
           }}
           className="absolute inset-0 w-full h-full"
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-stone-950/40 via-stone-950/50 to-stone-950/85 z-10" />
-          <motion.img
-            ref={imageRef}
-            src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=90&w=2400"
-            alt="VIVIDHRA Haute Couture"
+           <div className="absolute inset-0 bg-gradient-to-b from-stone-950/45 via-stone-950/50 to-stone-950/85 z-10" />
+          
+          {/* Previous image static background to prevent flashes/gaps */}
+          <img
+            src={COLLECTION_IMAGES[(currentImageIndex - 1 + COLLECTION_IMAGES.length) % COLLECTION_IMAGES.length]}
+            alt="VIVIDHRA Collection Back"
             referrerPolicy="no-referrer"
-            className="w-full h-full object-cover object-center scale-[1.05]"
-            animate={{
-              scale: [1.05, 1.08, 1.05],
-            }}
+            className="absolute inset-0 w-full h-full object-cover object-center scale-[1.05]"
+          />
+
+          {/* Current active image fading in on top with subtle Ken Burns zoom */}
+          <motion.img
+            key={currentImageIndex}
+            src={COLLECTION_IMAGES[currentImageIndex]}
+            alt="VIVIDHRA Collection Front"
+            referrerPolicy="no-referrer"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            initial={{ opacity: 0, scale: 1.05 }}
+            animate={{ opacity: 1, scale: 1.08 }}
+            exit={{ opacity: 0 }}
             transition={{
-              duration: 25,
-              repeat: Infinity,
-              ease: "easeInOut"
+              opacity: { duration: 0.4, ease: "easeInOut" },
+              scale: { duration: 3.5, ease: "easeOut" }
             }}
           />
         </motion.div>
@@ -325,26 +434,7 @@ export default function PremiumHero({ onBrowse, onExplorePhilosophy }: PremiumHe
           </p>
         </div>
 
-        {/* Elegant Action Buttons with Magnetic Effects */}
-        <div ref={buttonGroupRef} className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
-          <button
-            ref={ctaRef}
-            onMouseMove={handleCtaMouseMove}
-            onMouseLeave={handleCtaMouseLeave}
-            onClick={onBrowse}
-            className="w-56 sm:w-auto px-8 py-4 bg-white text-stone-950 text-xs font-outfit uppercase font-semibold tracking-widest hover:bg-[#1c1917] hover:text-white transition-colors rounded-full shadow-2xl cursor-pointer flex items-center justify-center space-x-2 group relative overflow-hidden"
-          >
-            <span>Browse Collection</span>
-            <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1.5 transition-transform" />
-          </button>
-          
-          <button
-            onClick={onExplorePhilosophy}
-            className="w-56 sm:w-auto px-8 py-4 bg-white/10 backdrop-blur-md text-white text-xs font-outfit uppercase font-medium tracking-widest hover:bg-white/15 transition-all rounded-full border border-white/20 cursor-pointer"
-          >
-            Philosophy
-          </button>
-        </div>
+        {/* Elegant Action Buttons with Magnetic Effects removed per user request */}
 
       </motion.div>
 

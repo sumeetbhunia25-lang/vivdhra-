@@ -7,7 +7,7 @@
 
 ## 🚀 Key Features
 
-*   **👗 Zara-Style Curated Marketplace:** Browse a beautiful selection of circular, sustainable, and upcycled premium garments.
+*   **👗 Vividhra-Style Curated Marketplace:** Browse a beautiful selection of circular, sustainable, and upcycled premium garments.
 *   **✨ AI Stylist (Google Gemini):** Receive instant personal styling advice, dynamic outfit pairings, and circular repair/redesign suggestions tailored to your wardrobe.
 *   **👥 AI Silhouette Studio:** Visualize garments across an inclusive spectrum of body sizes, heights, skin tones, and fits.
 *   **♻️ Circular Economy Donation Tracker:** Donate gently used apparel, pledge upcycling goals, and monitor real-time community milestone progress.

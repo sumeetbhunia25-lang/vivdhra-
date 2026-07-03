@@ -9,11 +9,12 @@ interface ReactHelmetProps {
 }
 
 export function ReactHelmet({ activeView, selectedProduct, selectedCategory, products }: ReactHelmetProps) {
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://vividhra.com';
+
   // Base default settings
   let title = 'VIVIDHRA | Modern, Elegant & Diverse Women\'s Clothing';
   let description = 'Discover VIVIDHRA, an elegant, aesthetic, creative, and diverse clothing brand for women. Shop premium dresses, tops, co-ords, bottom wear, and unique design collections.';
   let ogImage = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1200&h=630';
-  const ogUrl = typeof window !== 'undefined' ? window.location.href : 'https://vividhra.com';
 
   // Dynamic customization for specific screens
   if (selectedProduct) {
@@ -39,6 +40,10 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
   } else if (activeView === 'tracking') {
     title = 'Order Journey Portal | VIVIDHRA';
     description = '📦 Track the hand-tailored manufacturing and eco-express transit coordinates of your bespoke VIVIDHRA order in real-time.';
+  } else if (activeView === 'shop' && selectedCategory === 'all') {
+    title = 'Collections Hub | Curated Premium Silhouettes | VIVIDHRA';
+    description = '🏺 Discover VIVIDHRA\'s curated Collections Hub. Explore hand-tailored luxury garments arranged by styles: Dresses, Tops, Co-ords, Bottoms, and sustainable drops.';
+    ogImage = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1200&h=630';
   } else if (selectedCategory && selectedCategory !== 'all') {
     const categoryName = selectedCategory.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     title = `${categoryName} Collection | VIVIDHRA`;
@@ -60,13 +65,15 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
     }
   }
 
-  // 1. Calculate Canonical URL and Origin dynamically (works on all devices and local hostnames)
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://vividhra.com';
+  // Ensure absolute image URL for external crawlers (relative /uploads/xxx.jpg are prefixed with origin)
+  const absoluteOgImage = ogImage.startsWith('http') ? ogImage : `${origin}${ogImage}`;
+
+  // 1. Calculate Canonical URL dynamically (works on all devices and local hostnames)
   let canonicalUrl = origin;
   if (selectedProduct) {
     canonicalUrl = `${origin}/?product=${selectedProduct.id}`;
-  } else if (activeView === 'shop' && selectedCategory && selectedCategory !== 'all') {
-    canonicalUrl = `${origin}/?category=${selectedCategory}`;
+  } else if (activeView === 'shop' && selectedCategory) {
+    canonicalUrl = selectedCategory === 'all' ? `${origin}/?view=shop` : `${origin}/?category=${selectedCategory}`;
   } else if (activeView !== 'home') {
     canonicalUrl = `${origin}/?view=${activeView}`;
   }
@@ -74,22 +81,59 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
   // 2. Compute category name display label
   const categoryLabel = selectedCategory && selectedCategory !== 'all'
     ? selectedCategory.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-    : 'Our Collection';
+    : 'Collections Hub';
 
-  // 3. Compute Schema.org JSON-LD dynamic metadata
+  // 3. Compute Schema.org JSON-LD dynamic metadata with an elite semantic graph structure
   const schemaData = useMemo(() => {
+    // Shared elements of the Graph
+    const baseGraph = [
+      {
+        "@type": "Organization",
+        "@id": `${origin}/#organization`,
+        "name": "VIVIDHRA",
+        "url": origin,
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1200&h=630"
+        },
+        "sameAs": [
+          "https://instagram.com/vividhra_atelier"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${origin}/#website`,
+        "name": "VIVIDHRA",
+        "url": origin,
+        "publisher": {
+          "@id": `${origin}/#organization`
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": `${origin}/?search={search_term_string}`,
+          "query-input": "required name=search_term_string"
+        }
+      }
+    ];
+
     if (selectedProduct) {
       const ratingValue = Number(((selectedProduct.name.length % 5) * 0.1 + 4.5).toFixed(1));
       const reviewCount = (selectedProduct.name.charCodeAt(0) * 3) + 45;
+      const absoluteProductImages = selectedProduct.images.map(img => 
+        img.startsWith('http') ? img : `${origin}${img}`
+      );
 
-      return {
-        "@context": "https://schema.org/",
+      const productSchema = {
         "@type": "Product",
+        "@id": `${canonicalUrl}/#product`,
         "name": selectedProduct.name,
-        "image": selectedProduct.images,
+        "image": absoluteProductImages,
         "description": selectedProduct.description,
         "sku": selectedProduct.id,
         "mpn": selectedProduct.id,
+        "color": selectedProduct.colors,
+        "material": selectedProduct.materials,
+        "size": selectedProduct.sizes,
         "brand": {
           "@type": "Brand",
           "name": "VIVIDHRA"
@@ -101,10 +145,9 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
           "price": selectedProduct.price,
           "priceValidUntil": "2027-12-31",
           "itemCondition": "https://schema.org/NewCondition",
-          "availability": "https://schema.org/InStock",
+          "availability": selectedProduct.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
           "seller": {
-            "@type": "Organization",
-            "name": "VIVIDHRA"
+            "@id": `${origin}/#organization`
           }
         },
         "review": {
@@ -126,12 +169,44 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
           "reviewCount": reviewCount
         }
       };
+
+      const breadcrumbSchema = {
+        "@type": "BreadcrumbList",
+        "@id": `${canonicalUrl}/#breadcrumb`,
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": origin
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": selectedProduct.category.toUpperCase(),
+            "item": `${origin}/?category=${selectedProduct.category}`
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": selectedProduct.name,
+            "item": canonicalUrl
+          }
+        ]
+      };
+
+      return {
+        "@context": "https://schema.org",
+        "@graph": [...baseGraph, productSchema, breadcrumbSchema]
+      };
     }
 
-    if (activeView === 'shop' && selectedCategory && selectedCategory !== 'all') {
+    if (activeView === 'shop' && selectedCategory) {
       let filtered = products || [];
       filtered = filtered.filter((p) => {
-        if (selectedCategory === 'atelier-ai') {
+        if (selectedCategory === 'all') {
+          return true;
+        } else if (selectedCategory === 'atelier-ai') {
           return ['p14', 'p15', 'p16', 'p17', 'p18', 'p19'].includes(p.id);
         } else if (selectedCategory === 'new-arrivals') {
           return p.isTrending || p.id === 'p14' || p.id === 'p15';
@@ -172,9 +247,9 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
         }
       });
 
-      return {
-        "@context": "https://schema.org/",
+      const collectionSchema = {
         "@type": "CollectionPage",
+        "@id": `${canonicalUrl}/#collection`,
         "name": `${categoryLabel} Collection | VIVIDHRA`,
         "description": description,
         "url": canonicalUrl,
@@ -186,7 +261,7 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
             "position": idx + 1,
             "url": `${origin}/?product=${p.id}`,
             "name": p.name,
-            "image": p.images[0],
+            "image": p.images[0].startsWith('http') ? p.images[0] : `${origin}${p.images[0]}`,
             "offers": {
               "@type": "Offer",
               "priceCurrency": "INR",
@@ -196,48 +271,106 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
           }))
         }
       };
+
+      const breadcrumbSchema = {
+        "@type": "BreadcrumbList",
+        "@id": `${canonicalUrl}/#breadcrumb`,
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": origin
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": `${categoryLabel} Collection`,
+            "item": canonicalUrl
+          }
+        ]
+      };
+
+      return {
+        "@context": "https://schema.org",
+        "@graph": [...baseGraph, collectionSchema, breadcrumbSchema]
+      };
     }
 
     if (activeView === 'story') {
-      return {
-        "@context": "https://schema.org",
+      const aboutSchema = {
         "@type": "AboutPage",
+        "@id": `${canonicalUrl}/#about`,
         "name": "Our Story | VIVIDHRA",
         "description": description,
-        "url": canonicalUrl,
-        "publisher": {
-          "@type": "Organization",
-          "name": "VIVIDHRA",
-          "logo": {
-            "@type": "ImageObject",
-            "url": ogImage
+        "url": canonicalUrl
+      };
+
+      const breadcrumbSchema = {
+        "@type": "BreadcrumbList",
+        "@id": `${canonicalUrl}/#breadcrumb`,
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": origin
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Our Story",
+            "item": canonicalUrl
           }
-        }
+        ]
+      };
+
+      return {
+        "@context": "https://schema.org",
+        "@graph": [...baseGraph, aboutSchema, breadcrumbSchema]
       };
     }
 
     if (activeView === 'stylist') {
-      return {
-        "@context": "https://schema.org",
+      const stylistSchema = {
         "@type": "WebPage",
+        "@id": `${canonicalUrl}/#stylist`,
         "name": "AI Stylist & Fit Profiler | VIVIDHRA",
         "description": description,
         "url": canonicalUrl
       };
+
+      const breadcrumbSchema = {
+        "@type": "BreadcrumbList",
+        "@id": `${canonicalUrl}/#breadcrumb`,
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": origin
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "AI Stylist",
+            "item": canonicalUrl
+          }
+        ]
+      };
+
+      return {
+        "@context": "https://schema.org",
+        "@graph": [...baseGraph, stylistSchema, breadcrumbSchema]
+      };
     }
 
+    // Default Home WebSite graph
     return {
       "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "VIVIDHRA | Modern, Elegant & Diverse Women's Clothing",
-      "url": canonicalUrl,
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": `${origin}/?search={search_term_string}`,
-        "query-input": "required name=search_term_string"
-      }
+      "@graph": baseGraph
     };
-  }, [selectedProduct, activeView, selectedCategory, products, canonicalUrl, description, ogImage, origin, categoryLabel]);
+  }, [selectedProduct, activeView, selectedCategory, products, canonicalUrl, description, origin, categoryLabel]);
 
   // Double-secure fallback: Client-side Meta Dynamic Synchronization
   useEffect(() => {
@@ -258,13 +391,13 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
       setMetaTag('name', 'description', description);
       setMetaTag('property', 'og:title', title);
       setMetaTag('property', 'og:description', description);
-      setMetaTag('property', 'og:image', ogImage);
-      setMetaTag('property', 'og:image:secure_url', ogImage);
-      setMetaTag('property', 'og:url', ogUrl);
+      setMetaTag('property', 'og:image', absoluteOgImage);
+      setMetaTag('property', 'og:image:secure_url', absoluteOgImage);
+      setMetaTag('property', 'og:url', canonicalUrl);
       setMetaTag('property', 'og:type', selectedProduct ? 'product' : 'website');
       setMetaTag('name', 'twitter:title', title);
       setMetaTag('name', 'twitter:description', description);
-      setMetaTag('name', 'twitter:image', ogImage);
+      setMetaTag('name', 'twitter:image', absoluteOgImage);
       setMetaTag('name', 'theme-color', '#c2a46c');
 
       // Sync canonical link dynamically in head to guarantee index integrity
@@ -289,7 +422,7 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
       }
       script.text = JSON.stringify(schemaData);
     }
-  }, [title, description, ogImage, ogUrl, selectedProduct, canonicalUrl, schemaData]);
+  }, [title, description, absoluteOgImage, selectedProduct, canonicalUrl, schemaData]);
 
   // React 19 / Vite natively hoists these elements to the document head automatically
   return (
@@ -308,13 +441,13 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
       <meta property="og:type" content={selectedProduct ? 'product' : 'website'} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={ogImage} />
-      <meta property="og:image:secure_url" content={ogImage} />
+      <meta property="og:image" content={absoluteOgImage} />
+      <meta property="og:image:secure_url" content={absoluteOgImage} />
       <meta property="og:image:type" content="image/jpeg" />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:image:alt" content={selectedProduct ? selectedProduct.name : 'VIVIDHRA Lifestyle'} />
-      <meta property="og:url" content={ogUrl} />
+      <meta property="og:url" content={canonicalUrl} />
       <meta property="og:site_name" content="VIVIDHRA" />
       <meta property="og:locale" content="en_IN" />
 
@@ -322,7 +455,7 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={ogImage} />
+      <meta name="twitter:image" content={absoluteOgImage} />
       <meta name="twitter:site" content="@vividhra_atelier" />
 
       {/* Schema / Product metadata for rich previews */}
@@ -330,10 +463,14 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
         <>
           <meta property="product:price:amount" content={selectedProduct.price.toString()} />
           <meta property="product:price:currency" content="INR" />
-          <meta property="product:availability" content="instock" />
+          <meta property="product:availability" content={selectedProduct.inStock ? 'instock' : 'outofstock'} />
           <meta property="product:brand" content="VIVIDHRA" />
           <meta property="product:condition" content="new" />
-          <meta name="keywords" content={`Vividhra, ${selectedProduct.name}, Women's Clothing, Fashion, ${selectedProduct.category}, ${selectedProduct.materials}`} />
+          <meta property="product:materials" content={selectedProduct.materials} />
+          <meta property="product:fit_type" content={selectedProduct.fitType} />
+          <meta property="product:sizes" content={selectedProduct.sizes.join(', ')} />
+          <meta property="product:colors" content={selectedProduct.colors.join(', ')} />
+          <meta name="keywords" content={`Vividhra, ${selectedProduct.name}, Women's Clothing, Fashion, ${selectedProduct.category}, ${selectedProduct.materials}, ${selectedProduct.colors.join(', ')}, ${selectedProduct.fitType}`} />
         </>
       )}
 
@@ -344,4 +481,3 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
     </>
   );
 }
-

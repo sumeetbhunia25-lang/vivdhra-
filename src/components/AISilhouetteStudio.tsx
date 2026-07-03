@@ -295,6 +295,7 @@ export default function AISilhouetteStudio({ products, onSelectProduct }: AISilh
                         <img
                           src={p.images[0]}
                           alt={p.name}
+                          referrerPolicy="no-referrer"
                           className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                         />
                       </div>

@@ -30,26 +30,31 @@ import {
   CreditCard,
   Ticket,
   Clock,
-  Trash2
+  Trash2,
+  History
 } from 'lucide-react';
 import { Product, CartItem, WishlistItem, Order, DonationTarget, DonationLog, FitProfile, UserAccount } from './types';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import ZaraStyleProductCard from './components/ZaraStyleProductCard';
+import VividhraStyleProductCard from './components/VividhraStyleProductCard';
 import DonationTrackerPage from './components/DonationTrackerPage';
 import FitProfileForm from './components/FitProfileForm';
 import AIStylist from './components/AIStylist';
 import AdminPanel from './components/AdminPanel';
 import StoryPage from './components/StoryPage';
-import ZaraOpeningIntro from './components/ZaraOpeningIntro';
+import VividhraOpeningIntro from './components/VividhraOpeningIntro';
 import AISilhouetteStudio from './components/AISilhouetteStudio';
 import PremiumHero from './components/PremiumHero';
 import OrderJourneyTracker from './components/OrderJourneyTracker';
 import OrderTrackingPage from './components/OrderTrackingPage';
+import OrderHistoryDashboard from './components/OrderHistoryDashboard';
 import CollectionDrawer, { collectionCategories } from './components/CollectionDrawer';
 import { ReactHelmet } from './components/ReactHelmet';
 import CategoryListingPage from './components/CategoryListingPage';
 import ProductDetailPage from './components/ProductDetailPage';
+import QuickViewModal from './components/QuickViewModal';
+import { addItemToCart, updateCartQuantity } from './lib/cartUtils';
+import { filterProducts } from './lib/productFilters';
 
 const categoriesList = [
   { id: 'all', label: 'All Items', image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=200' },
@@ -69,7 +74,7 @@ export default function App() {
   // Navigation & Core views
   const [showIntro, setShowIntro] = useState(false);
   const [activeView, setActiveView] = useState<'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop' | 'tracking'>('home');
-  const [profileSubTab, setProfileSubTab] = useState<'ai-silhouette' | 'profile-form' | 'order-tracking'>('ai-silhouette');
+  const [profileSubTab, setProfileSubTab] = useState<'ai-silhouette' | 'profile-form' | 'order-tracking' | 'order-history'>('ai-silhouette');
   const [user, setUser] = useState<UserAccount | null>({
     id: 'user_1',
     name: 'Ananya Iyer',
@@ -112,6 +117,100 @@ export default function App() {
   const [isCollectionDrawerOpen, setIsCollectionDrawerOpen] = useState(false);
   const [isAIStylistOpen, setIsAIStylistOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+
+  // Global Navigation History State and Scroll Restoration
+  interface NavigationHistoryItem {
+    activeView: 'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop' | 'tracking';
+    selectedCategory: string;
+    selectedProduct: Product | null;
+    searchQuery: string;
+  }
+
+  const [navHistory, setNavHistory] = useState<NavigationHistoryItem[]>([]);
+  const isGoingBackRef = useRef(false);
+  const scrollPositionsRef = useRef<Record<string, number>>({});
+  const lastStateRef = useRef<NavigationHistoryItem>({
+    activeView: 'home',
+    selectedCategory: 'all',
+    selectedProduct: null,
+    searchQuery: '',
+  });
+
+  const getStateKey = (view: string, category: string, product: Product | null, search: string) => {
+    if (product) return `product-${product.id}`;
+    if (view === 'shop') return `shop-${category}-${search || ''}`;
+    return `view-${view}`;
+  };
+
+  const handleBack = () => {
+    if (navHistory.length > 0) {
+      isGoingBackRef.current = true;
+      const previousState = navHistory[navHistory.length - 1];
+      
+      setNavHistory((prev) => prev.slice(0, -1));
+
+      setActiveView(previousState.activeView);
+      setSelectedCategory(previousState.selectedCategory);
+      setSelectedProduct(previousState.selectedProduct);
+      setSearchQuery(previousState.searchQuery);
+    } else {
+      if (selectedProduct) {
+        setSelectedProduct(null);
+      } else if (selectedCategory !== 'all') {
+        setSelectedCategory('all');
+      } else {
+        setActiveView('home');
+      }
+    }
+  };
+
+  useEffect(() => {
+    const oldState = lastStateRef.current;
+    const currentKey = getStateKey(activeView, selectedCategory, selectedProduct, searchQuery);
+    const oldKey = getStateKey(oldState.activeView, oldState.selectedCategory, oldState.selectedProduct, oldState.searchQuery);
+
+    if (oldKey !== currentKey) {
+      // Save scroll position for the state we are leaving
+      scrollPositionsRef.current[oldKey] = window.scrollY;
+
+      if (isGoingBackRef.current) {
+        // Navigating back: do not push. Just reset flag.
+        isGoingBackRef.current = false;
+      } else {
+        // Navigating forward: push oldState to history stack
+        setNavHistory((prev) => {
+          // Avoid pushing duplicate top elements
+          if (prev.length > 0) {
+            const topKey = getStateKey(prev[prev.length - 1].activeView, prev[prev.length - 1].selectedCategory, prev[prev.length - 1].selectedProduct, prev[prev.length - 1].searchQuery);
+            if (topKey === oldKey) {
+              return prev;
+            }
+          }
+          return [...prev, {
+            activeView: oldState.activeView,
+            selectedCategory: oldState.selectedCategory,
+            selectedProduct: oldState.selectedProduct,
+            searchQuery: oldState.searchQuery,
+          }];
+        });
+      }
+
+      // Update ref to new state
+      lastStateRef.current = {
+        activeView,
+        selectedCategory,
+        selectedProduct,
+        searchQuery,
+      };
+
+      // Restore scroll position for new state
+      const savedScroll = scrollPositionsRef.current[currentKey] || 0;
+      setTimeout(() => {
+        window.scrollTo({ top: savedScroll, behavior: 'instant' as any });
+      }, 50);
+    }
+  }, [activeView, selectedCategory, selectedProduct, searchQuery]);
   
   // Checkout states
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -125,7 +224,7 @@ export default function App() {
   const [placedOrderId, setPlacedOrderId] = useState('');
 
   // Patron Authentication states
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
@@ -288,6 +387,11 @@ export default function App() {
 
   useEffect(() => {
     loadData();
+    // Periodically poll for updated inventory and 'Limited Stock' badges in real-time
+    const interval = setInterval(() => {
+      loadData();
+    }, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchAndSetProfile = async (uid?: string) => {
@@ -382,6 +486,23 @@ export default function App() {
       setIsAuthLoading(false);
     }
   };
+  
+  // Patron Forgot Password Reset Handler
+  const handleForgotPasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
+    if (!authEmail) {
+      setAuthError('Registered patron email address is required.');
+      return;
+    }
+    setIsAuthLoading(true);
+    // Simulate premium server-side security link dispatching delay
+    setTimeout(() => {
+      setIsAuthLoading(false);
+      setAuthSuccess(`Secure Reset Link Dispatched! We have simulated sending an encrypted credential reset link to "${authEmail}". Please check your inbox or spam folder within 10 minutes to safely change your security password.`);
+    }, 1500);
+  };
 
   // Patron Logout Handler
   const handleLogout = () => {
@@ -392,29 +513,90 @@ export default function App() {
     fetchAndSetProfile('guest-uid');
   };
 
+  // Grid keyboard arrow key navigation
+  const handleGridKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+      return;
+    }
+
+    const cards = Array.from(e.currentTarget.querySelectorAll('.gsap-product-card')) as HTMLElement[];
+    if (cards.length === 0) return;
+
+    const activeElement = document.activeElement as HTMLElement;
+    const currentIndex = cards.indexOf(activeElement);
+
+    if (currentIndex === -1) {
+      e.preventDefault();
+      cards[0].focus();
+      return;
+    }
+
+    let targetIndex = -1;
+
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      targetIndex = (currentIndex + 1) % cards.length;
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      targetIndex = (currentIndex - 1 + cards.length) % cards.length;
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const currentRect = activeElement.getBoundingClientRect();
+      const currentCenterX = currentRect.left + currentRect.width / 2;
+      
+      let bestCandidateIndex = -1;
+      let minDistance = Infinity;
+
+      for (let i = 0; i < cards.length; i++) {
+        if (i === currentIndex) continue;
+        const rect = cards[i].getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        
+        const isBelow = rect.top >= currentRect.bottom - 10;
+        const isAbove = rect.bottom <= currentRect.top + 10;
+
+        if ((e.key === 'ArrowDown' && isBelow) || (e.key === 'ArrowUp' && isAbove)) {
+          const dy = Math.abs(rect.top - currentRect.top);
+          const dx = Math.abs(centerX - currentCenterX);
+          const distance = dy + dx * 2.5; // Weight horizontal alignment more strongly
+          
+          if (distance < minDistance) {
+            minDistance = distance;
+            bestCandidateIndex = i;
+          }
+        }
+      }
+
+      if (bestCandidateIndex !== -1) {
+        targetIndex = bestCandidateIndex;
+      } else {
+        // Safe Grid Column approximation fallback
+        let cols = 2;
+        if (window.innerWidth >= 1024) cols = 4;
+        else if (window.innerWidth >= 768) cols = 3;
+        
+        if (e.key === 'ArrowDown') {
+          targetIndex = Math.min(currentIndex + cols, cards.length - 1);
+        } else if (e.key === 'ArrowUp') {
+          targetIndex = Math.max(currentIndex - cols, 0);
+        }
+      }
+    }
+
+    if (targetIndex !== -1 && cards[targetIndex]) {
+      cards[targetIndex].focus();
+      cards[targetIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  };
+
   // Add Item to cart
   const handleAddToCart = (product: Product, size: 'XS' | 'S' | 'M' | 'L' | 'XL', color: string) => {
-    const existingIndex = cart.findIndex((item) => item.product.id === product.id && item.size === size);
-    if (existingIndex > -1) {
-      const updated = [...cart];
-      updated[existingIndex].quantity += 1;
-      setCart(updated);
-    } else {
-      setCart([...cart, { id: Math.random().toString(), product, quantity: 1, size, color }]);
-    }
+    setCart(addItemToCart(cart, product, size, color));
     setIsCartOpen(true);
   };
 
   const handleUpdateCartQuantity = (itemId: string, delta: number) => {
-    const updated = cart
-      .map((item) => {
-        if (item.id === itemId) {
-          return { ...item, quantity: item.quantity + delta };
-        }
-        return item;
-      })
-      .filter((item) => item.quantity > 0);
-    setCart(updated);
+    setCart(updateCartQuantity(cart, itemId, delta));
   };
 
   // Toggle wishlist
@@ -601,58 +783,7 @@ export default function App() {
   };
 
   // Filter products by search and category mapping dynamically for all 17 categories
-  const filteredProducts = products.filter((p) => {
-    let matchCategory = false;
-    
-    if (selectedCategory === 'all') {
-      matchCategory = true;
-    } else if (selectedCategory === 'atelier-ai') {
-      matchCategory = ['p14', 'p15', 'p16', 'p17', 'p18', 'p19'].includes(p.id);
-    } else if (selectedCategory === 'new-arrivals') {
-      matchCategory = p.isTrending || p.id === 'p14' || p.id === 'p15';
-    } else if (selectedCategory === 'best-sellers') {
-      matchCategory = p.isTrending && p.price > 1600;
-    } else if (selectedCategory === 'dresses') {
-      matchCategory = p.category === 'dresses';
-    } else if (selectedCategory === 'tops') {
-      matchCategory = p.category === 'tops';
-    } else if (selectedCategory === 'co-ords') {
-      matchCategory = p.category === 'co-ords';
-    } else if (selectedCategory === 'bottoms') {
-      matchCategory = p.category === 'trousers';
-    } else if (selectedCategory === 'kurtis') {
-      matchCategory = p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('drape');
-    } else if (selectedCategory === 'ethnic-sets') {
-      matchCategory = p.name.toLowerCase().includes('set') || p.name.toLowerCase().includes('asymmetric');
-    } else if (selectedCategory === 'party-wear') {
-      matchCategory = p.name.toLowerCase().includes('corset') || p.name.toLowerCase().includes('satin') || p.name.toLowerCase().includes('wine') || p.category === 'blazers';
-    } else if (selectedCategory === 'office-wear') {
-      matchCategory = p.category === 'blazers' || p.category === 'trousers';
-    } else if (selectedCategory === 'daily-wear') {
-      matchCategory = p.category === 'tops' || p.category === 'co-ords';
-    } else if (selectedCategory === 'vacation-wear') {
-      matchCategory = p.category === 'vacation' || p.materials.toLowerCase().includes('linen');
-    } else if (selectedCategory === 'college-wear') {
-      matchCategory = p.price < 1800;
-    } else if (selectedCategory === 'house-wear') {
-      matchCategory = p.materials.toLowerCase().includes('cotton') && p.category === 'tops';
-    } else if (selectedCategory === 'minimal-collection') {
-      matchCategory = p.materials.toLowerCase().includes('linen') || p.category === 'blazers';
-    } else if (selectedCategory === 'sustainable-picks') {
-      matchCategory = p.materials.toLowerCase().includes('organic') || p.materials.toLowerCase().includes('gots') || p.materials.toLowerCase().includes('eco');
-    } else if (selectedCategory === 'sale') {
-      matchCategory = p.originalPrice > p.price;
-    } else {
-      matchCategory = p.category === selectedCategory;
-    }
-
-    const matchSearch =
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.materials.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.description.toLowerCase().includes(searchQuery.toLowerCase());
-      
-    return matchCategory && matchSearch;
-  });
+  const filteredProducts = filterProducts(products, selectedCategory, searchQuery);
 
   return (
     <div className="relative min-h-screen bg-[#FDFCFB] text-[#1A1A1A] selection:bg-[#78716c]/20 selection:text-[#1c1917] antialiased">
@@ -671,7 +802,7 @@ export default function App() {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-0 z-100"
           >
-            <ZaraOpeningIntro onEnter={() => setShowIntro(false)} />
+            <VividhraOpeningIntro onEnter={() => setShowIntro(false)} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -770,6 +901,8 @@ export default function App() {
                 products={products}
                 setSelectedProduct={setSelectedProduct}
                 setIsAIStylistOpen={setIsAIStylistOpen}
+                setSelectedCategory={setSelectedCategory}
+                setActiveView={setActiveView}
               />
             </motion.div>
           )}
@@ -790,10 +923,13 @@ export default function App() {
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 setSelectedProduct={setSelectedProduct}
+                onQuickView={(p) => setQuickViewProduct(p)}
                 handleAddToCart={handleAddToCart}
                 handleToggleWishlist={handleToggleWishlist}
                 wishlist={wishlist}
                 categoriesList={categoriesList}
+                onBack={handleBack}
+                setActiveView={setActiveView}
               />
             </motion.div>
           )}
@@ -815,92 +951,9 @@ export default function App() {
                   listSec?.scrollIntoView({ behavior: 'smooth' });
                 }}
                 onExplorePhilosophy={() => setActiveView('story')}
+                selectedCategory={selectedCategory}
+                products={products}
               />
-
-              {/* Custom Silhouette Exhibition Section */}
-              <section className="mx-4 md:mx-10 bg-[#faf9f5] border border-[#e7e5e4] rounded-3xl p-6 md:p-10 shadow-sm space-y-8">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-[#e7e5e4]">
-                  <div className="space-y-1.5">
-                    <span className="inline-flex items-center space-x-1 text-[10px] uppercase tracking-wider text-[#c2a46c] font-mono bg-[#c2a46c]/10 px-3 py-1 rounded-full font-bold">
-                      <Sparkles className="w-3 h-3 mr-1 text-[#c2a46c]" /> New Release: Autumn/Winter Collection
-                    </span>
-                    <h2 className="serif-header text-2xl md:text-3xl font-bold text-stone-950">
-                      The AI Stylist Silhouette Exhibition
-                    </h2>
-                    <p className="text-xs md:text-sm text-stone-600 font-light">
-                      A limited collection engineered by our Digital Stylist, specifically designed to flatter vertical proportions, structured shoulders, and draped lines.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setSelectedCategory('atelier-ai');
-                      const listSec = document.getElementById('collection-grid');
-                      listSec?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="text-xs uppercase tracking-widest font-mono font-bold text-[#c2a46c] hover:text-stone-900 transition-colors flex items-center space-x-1.5 cursor-pointer self-start md:self-auto"
-                  >
-                    <span>View all atelier picks</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <div className="flex overflow-x-auto pb-4 gap-6 snap-x snap-mandatory lg:grid lg:grid-cols-3 xl:grid-cols-6 lg:overflow-x-visible lg:pb-0 scrollbar-none">
-                  {products.filter(p => ['p14', 'p15', 'p16', 'p17', 'p18', 'p19'].includes(p.id)).map((p) => {
-                    // Match visual label descriptions
-                    const structureLabels: Record<string, { body: string; vibe: string }> = {
-                      p14: { body: "Hourglass Frame", vibe: "Corporate Chic" },
-                      p15: { body: "Petite Frame", vibe: "Quiet Luxury" },
-                      p16: { body: "Broad Frame", vibe: "Bold Sculptural" },
-                      p17: { body: "Rectangle Frame", vibe: "Asymmetrical" },
-                      p18: { body: "Pear Frame", vibe: "Structured Corset" },
-                      p19: { body: "All Heights", vibe: "Resort Lounge" },
-                    };
-                    const labels = structureLabels[p.id] || { body: "Balanced Proportions", vibe: "Aesthetic" };
-
-                    return (
-                      <div
-                        key={p.id}
-                        onClick={() => setSelectedProduct(p)}
-                        className="flex-none w-[260px] sm:w-[300px] lg:w-auto snap-start bg-white border border-[#e7e5e4] rounded-2xl p-3 flex flex-col justify-between group hover:border-[#c2a46c] transition-all duration-300 cursor-pointer hover:shadow-md hover:scale-[1.01]"
-                      >
-                        <div className="space-y-3">
-                          <div className="aspect-[3/4] rounded-xl overflow-hidden bg-stone-100 relative">
-                            <img
-                              src={p.images[0]}
-                              alt={p.name}
-                              referrerPolicy="no-referrer"
-                              className="w-full h-full object-cover object-center group-hover:scale-105 transition-all duration-500"
-                            />
-                            <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-xs py-1 px-2.5 rounded-full text-[8px] uppercase tracking-wider text-white font-mono font-bold">
-                              {labels.vibe}
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <h4 className="text-xs font-bold text-stone-900 group-hover:text-[#c2a46c] transition-colors leading-tight uppercase tracking-tight">
-                              {p.name}
-                            </h4>
-                            <p className="text-[10px] text-[#c2a46c] font-mono font-bold">
-                              ₹{p.price} <span className="text-stone-400 line-through font-normal ml-1 font-mono text-[9px]">₹{p.originalPrice}</span>
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-4 pt-3 border-t border-stone-100 space-y-1.5">
-                          <div className="flex items-center justify-between text-[9px] text-stone-500 font-outfit">
-                            <span>Fit Profile:</span>
-                            <span className="font-bold text-stone-800">{labels.body}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-[8px] text-stone-400 font-mono uppercase">
-                            <span>{p.category}</span>
-                            <span className="text-stone-600 font-bold group-hover:underline">Tailor &bull; View &rarr;</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
 
               {/* Products Catalog Grid */}
               <section id="collection-grid" className="mx-4 md:mx-10 bg-white border border-gray-100 rounded-3xl p-6 md:p-10 shadow-xs scroll-mt-24">
@@ -924,15 +977,20 @@ export default function App() {
                     <p className="text-sm text-[#78716c] font-outfit">No garments found matching criteria.</p>
                   </div>
                 ) : (
-                  <div ref={productGridRef} className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 w-full">
+                  <div 
+                    ref={productGridRef} 
+                    onKeyDown={handleGridKeyDown}
+                    className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 w-full"
+                  >
                     {filteredProducts.map((prod) => (
-                      <ZaraStyleProductCard
+                      <VividhraStyleProductCard
                         key={prod.id}
                         product={prod}
                         onAddToCart={handleAddToCart}
                         onWishlistToggle={handleToggleWishlist}
                         isWishlisted={wishlist.some((w) => w.product.id === prod.id)}
-                        onQuickView={(p) => setSelectedProduct(p)}
+                        onQuickView={(p) => setQuickViewProduct(p)}
+                        onSelectProduct={(p) => setSelectedProduct(p)}
                         className="gsap-product-card opacity-0 h-full"
                       />
                     ))}
@@ -1089,12 +1147,12 @@ export default function App() {
                             setAuthSuccess('');
                           }}
                           className={`pb-2.5 text-xs font-bold uppercase tracking-wider font-outfit mr-6 border-b-2 transition-all cursor-pointer ${
-                            authMode === 'login'
+                            authMode === 'login' || authMode === 'forgot'
                               ? 'border-[#1c1917] text-[#1c1917]'
                               : 'border-transparent text-stone-400 hover:text-stone-700'
                           }`}
                         >
-                          Sign In
+                          {authMode === 'forgot' ? 'Forgot Password' : 'Sign In'}
                         </button>
                         <button
                           onClick={() => {
@@ -1136,7 +1194,7 @@ export default function App() {
                       )}
 
                       {/* Form */}
-                      <form onSubmit={authMode === 'login' ? handleLogin : handleRegister} className="space-y-4 text-left">
+                      <form onSubmit={authMode === 'login' ? handleLogin : authMode === 'register' ? handleRegister : handleForgotPasswordReset} className="space-y-4 text-left">
                         {authMode === 'register' && (
                           <div className="space-y-1.5">
                             <label className="text-[10px] uppercase tracking-wider font-mono text-stone-500 font-bold">
@@ -1173,22 +1231,39 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] uppercase tracking-wider font-mono text-stone-500 font-bold">
-                            Security Password
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="password"
-                              value={authPassword}
-                              onChange={(e) => setAuthPassword(e.target.value)}
-                              placeholder="••••••••"
-                              required
-                              className="w-full pl-9 pr-3 py-2 border border-stone-200 rounded-lg text-xs font-outfit focus:outline-hidden focus:border-[#1c1917] bg-stone-50/50"
-                            />
-                            <Lock className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-2.5" />
+                        {authMode !== 'forgot' && (
+                          <div className="space-y-1.5">
+                            <div className="flex justify-between items-center">
+                              <label className="text-[10px] uppercase tracking-wider font-mono text-stone-500 font-bold">
+                                Security Password
+                              </label>
+                              {authMode === 'login' && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAuthMode('forgot');
+                                    setAuthError('');
+                                    setAuthSuccess('');
+                                  }}
+                                  className="text-[9px] text-[#c2a46c] hover:text-[#b0915a] hover:underline font-mono cursor-pointer uppercase tracking-wider"
+                                >
+                                  Forgot?
+                                </button>
+                              )}
+                            </div>
+                            <div className="relative">
+                              <input
+                                type="password"
+                                value={authPassword}
+                                onChange={(e) => setAuthPassword(e.target.value)}
+                                placeholder="••••••••"
+                                required
+                                className="w-full pl-9 pr-3 py-2 border border-stone-200 rounded-lg text-xs font-outfit focus:outline-hidden focus:border-[#1c1917] bg-stone-50/50"
+                              />
+                              <Lock className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-2.5" />
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {authMode === 'register' && (
                           <div className="space-y-2 pt-1">
@@ -1229,11 +1304,33 @@ export default function App() {
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                           ) : (
                             <>
-                              <span>{authMode === 'login' ? 'Authenticate Sanctuary' : 'Join the Atelier'}</span>
+                              <span>
+                                {authMode === 'login' 
+                                  ? 'Authenticate Sanctuary' 
+                                  : authMode === 'register' 
+                                  ? 'Join the Atelier' 
+                                  : 'Dispatch Reset Link'}
+                              </span>
                               <ArrowRight className="w-3.5 h-3.5" />
                             </>
                           )}
                         </button>
+
+                        {authMode === 'forgot' && (
+                          <div className="text-center pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAuthMode('login');
+                                setAuthError('');
+                                setAuthSuccess('');
+                              }}
+                              className="text-[10px] text-stone-500 hover:text-[#1c1917] underline font-mono cursor-pointer"
+                            >
+                              Remembered credentials? Back to Sign In
+                            </button>
+                          </div>
+                        )}
 
                         <div className="text-center pt-2">
                           <button
@@ -1297,7 +1394,7 @@ export default function App() {
               })()}
 
               {/* Sub tab Selector */}
-              <div className="flex justify-center max-w-xl mx-auto">
+              <div className="flex justify-center max-w-2xl mx-auto">
                 <div className="flex bg-[#fafaf9] border border-stone-200 p-1 rounded-xl w-full">
                   <button
                     onClick={() => setProfileSubTab('ai-silhouette')}
@@ -1331,6 +1428,17 @@ export default function App() {
                   >
                     <Package className="w-3.5 h-3.5 text-[#c2a46c]" />
                     <span>Track Order</span>
+                  </button>
+                  <button
+                    onClick={() => setProfileSubTab('order-history')}
+                    className={`flex-1 py-2.5 rounded-lg text-[10px] md:text-xs uppercase tracking-wider md:tracking-widest font-outfit font-bold transition-all cursor-pointer flex items-center justify-center space-x-1 md:space-x-1.5 ${
+                      profileSubTab === 'order-history'
+                        ? 'bg-[#1c1917] text-white shadow-xs'
+                        : 'text-stone-500 hover:text-stone-900'
+                    }`}
+                  >
+                    <History className="w-3.5 h-3.5 text-[#c2a46c]" />
+                    <span>Order History</span>
                   </button>
                 </div>
               </div>
@@ -1377,6 +1485,23 @@ export default function App() {
                     <OrderJourneyTracker
                       orders={orders}
                       currentUserEmail={user?.email}
+                    />
+                  </motion.div>
+                )}
+
+                {profileSubTab === 'order-history' && (
+                  <motion.div
+                    key="order-history"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    <OrderHistoryDashboard
+                      orders={orders}
+                      products={products}
+                      currentUserEmail={user?.email}
+                      onAddToCart={handleAddToCart}
                     />
                   </motion.div>
                 )}
@@ -2434,6 +2559,18 @@ export default function App() {
         setActiveView(v);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }} />
+
+      {/* 10. Floating Quick View Modal Overlay */}
+      {quickViewProduct && (
+        <QuickViewModal
+          product={quickViewProduct}
+          onClose={() => setQuickViewProduct(null)}
+          onAddToCart={(p, sz, clr) => {
+            handleAddToCart(p, sz, clr);
+            setQuickViewProduct(null);
+          }}
+        />
+      )}
 
     </div>
   );

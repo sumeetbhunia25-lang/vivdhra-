@@ -26,6 +26,81 @@ export default function AdminPanel({
   const [crudError, setCrudError] = useState('');
   const [crudSuccess, setCrudSuccess] = useState('');
 
+  // AI upload & scanning states
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanMessage, setScanMessage] = useState('');
+  const [uploadedImagePreview, setUploadedImagePreview] = useState('');
+
+  const handleImageUploadAndAnalyze = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    setScanMessage('Uploading and scanning garment details via VIVIDHRA AI...');
+    setCrudError('');
+    setCrudSuccess('');
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64String = event.target?.result as string;
+      setUploadedImagePreview(base64String);
+
+      try {
+        const response = await fetch('/api/products/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: base64String,
+            mimeType: file.type,
+            filename: file.name
+          })
+        });
+
+        const data = await response.json();
+        if (data.success && data.recognized) {
+          const rec = data.recognized;
+          
+          setEditingProduct({
+            id: editingProduct?.id || '',
+            name: rec.name || '',
+            category: (rec.category as any) || 'tops',
+            subcategory: rec.subcategory || '',
+            price: rec.price || 1899,
+            originalPrice: rec.originalPrice || Math.round(rec.price * 1.35),
+            description: rec.description || '',
+            materials: rec.materials || '',
+            care: rec.care || '',
+            images: [data.imageUrl || rec.images?.[0] || 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800'],
+            sizes: rec.sizes || ['XS', 'S', 'M', 'L', 'XL'],
+            colors: rec.colors || ['Warm Charcoal'],
+            inStock: true,
+            fitType: rec.fitType || 'regular',
+            isTrending: true,
+            tags: rec.tags || []
+          });
+
+          setCrudSuccess(`AI recognized "${rec.name}"! Form autocompleted. Review and edit details below.`);
+        } else {
+          setCrudError('AI was unable to extract details. Please enter details manually.');
+        }
+      } catch (err) {
+        console.error('Image analyze error:', err);
+        setCrudError('Network error during AI scan. Fell back to manual entry.');
+      } finally {
+        setIsScanning(false);
+        setScanMessage('');
+      }
+    };
+
+    reader.onerror = () => {
+      setCrudError('Failed to read selected image file.');
+      setIsScanning(false);
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+
   // AI Insights state
   const [aiInsights, setAiInsights] = useState<{
     trendingOccasions: string;
@@ -64,10 +139,11 @@ export default function AdminPanel({
     }
 
     try {
-      const payload: Product = {
+      const payload: any = {
         id: editingProduct.id || '',
         name: editingProduct.name,
         category: editingProduct.category as any,
+        subcategory: editingProduct.subcategory || '',
         price: Number(editingProduct.price),
         originalPrice: editingProduct.originalPrice ? Number(editingProduct.originalPrice) : undefined,
         description: editingProduct.description || 'Premium VIVIDHRA luxury garment designed with purpose.',
@@ -77,14 +153,18 @@ export default function AdminPanel({
         images: editingProduct.images && editingProduct.images.length > 0 
           ? editingProduct.images 
           : [
-              'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&q=80&w=800',
-              'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800'
+              'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&q=80&w=800'
             ],
         sizes: editingProduct.sizes || ['XS', 'S', 'M', 'L', 'XL'],
-        colors: editingProduct.colors || ['Pristine White'],
+        colors: typeof editingProduct.colors === 'string' 
+          ? (editingProduct.colors as string).split(',').map((c: string) => c.trim()) 
+          : editingProduct.colors || ['Pristine White'],
         inStock: editingProduct.inStock !== undefined ? editingProduct.inStock : true,
         fitType: (editingProduct.fitType as any) || 'regular',
-        isTrending: editingProduct.isTrending || false
+        isTrending: editingProduct.isTrending !== false,
+        tags: typeof editingProduct.tags === 'string'
+          ? (editingProduct.tags as string).split(',').map((t: string) => t.trim())
+          : editingProduct.tags || []
       };
 
       await onAddProduct(payload);
@@ -319,6 +399,52 @@ export default function AdminPanel({
               </div>
             )}
 
+            {/* AI Image Scan & Autocomplete upload component */}
+            <div className="mb-6 p-5 bg-stone-50 border border-dashed border-stone-300 rounded-2xl text-center relative overflow-hidden transition-all hover:bg-stone-100">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUploadAndAnalyze}
+                disabled={isScanning}
+                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+              />
+              <div className="flex flex-col items-center justify-center space-y-2">
+                {editingProduct?.images?.[0] ? (
+                  <div className="relative w-20 h-24 bg-stone-100 rounded-lg overflow-hidden border border-stone-200 shadow-2xs">
+                    <img
+                      src={editingProduct.images[0]}
+                      alt="Uploaded product preview"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                      <span className="text-[8px] uppercase tracking-wider text-white font-bold">Change Image</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-[#c2a46c]/10 text-[#c2a46c] rounded-full">
+                    <Sparkles className="w-6 h-6 animate-pulse" />
+                  </div>
+                )}
+                
+                <div>
+                  <p className="text-xs font-semibold text-stone-900">
+                    {editingProduct?.images?.[0] ? 'Replace Product Image' : 'AI Scan Product Image'}
+                  </p>
+                  <p className="text-[10px] text-stone-500 font-light max-w-xs mx-auto mt-0.5 leading-normal">
+                    Drag & drop or click to upload. Server-side Gemini AI will detect garment cuts, colors, subcategories, and autocomplete this catalog form!
+                  </p>
+                </div>
+
+                {isScanning && (
+                  <div className="w-full pt-2 flex flex-col items-center justify-center space-y-1.5 z-20 bg-stone-50/95 absolute inset-0">
+                    <RefreshCw className="w-5 h-5 text-[#c2a46c] animate-spin" />
+                    <span className="text-[10px] font-mono text-stone-600 font-bold">{scanMessage}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <form onSubmit={handleSaveProduct} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-[10px] uppercase tracking-wider text-[#78716c] font-outfit">Garment Name</label>
@@ -387,6 +513,69 @@ export default function AdminPanel({
                 </div>
               </div>
 
+              {/* Subcategory & Image URL Fields */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-[#78716c] font-outfit">Subcategory</label>
+                  {editingProduct?.category === 'tops' ? (
+                    <select
+                      value={editingProduct?.subcategory || 'Structured Tops'}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, subcategory: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-[#d6d3d1] bg-white text-xs focus:outline-hidden"
+                    >
+                      <option value="Structured Tops">Structured Tops</option>
+                      <option value="Statement Tops">Statement Tops</option>
+                      <option value="Occasion Tops">Occasion Tops</option>
+                      <option value="Party Tops">Party Tops</option>
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="e.g. Linen Blouses"
+                      value={editingProduct?.subcategory || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, subcategory: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-lg border border-[#d6d3d1] focus:outline-hidden focus:border-[#1c1917] text-xs font-outfit"
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-[#78716c] font-outfit">Image Path / URL</label>
+                  <input
+                    type="text"
+                    placeholder="Auto-filled, or enter URL"
+                    value={editingProduct?.images?.[0] || ''}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, images: [e.target.value] })}
+                    className="w-full px-3.5 py-2 rounded-lg border border-[#d6d3d1] focus:outline-hidden focus:border-[#1c1917] text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Colors & Tags Fields */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-[#78716c] font-outfit">Colors (comma separated)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Warm Taupe, Cream White"
+                    value={Array.isArray(editingProduct?.colors) ? editingProduct.colors.join(', ') : editingProduct?.colors || ''}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, colors: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-lg border border-[#d6d3d1] focus:outline-hidden focus:border-[#1c1917] text-xs font-outfit"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-[#78716c] font-outfit">Style Tags (comma separated)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. peplum, asymmetric, resort"
+                    value={Array.isArray(editingProduct?.tags) ? editingProduct.tags.join(', ') : editingProduct?.tags || ''}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, tags: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-lg border border-[#d6d3d1] focus:outline-hidden focus:border-[#1c1917] text-xs font-outfit"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1">
                 <label className="text-[10px] uppercase tracking-wider text-[#78716c] font-outfit">Materials / Fabric Composition</label>
                 <input
@@ -408,6 +597,7 @@ export default function AdminPanel({
                   className="w-full px-3.5 py-2 rounded-lg border border-[#d6d3d1] focus:outline-hidden focus:border-[#1c1917] text-xs font-outfit"
                 />
               </div>
+
 
               <div className="space-y-1">
                 <label className="text-[10px] uppercase tracking-wider text-[#78716c] font-outfit">Description</label>

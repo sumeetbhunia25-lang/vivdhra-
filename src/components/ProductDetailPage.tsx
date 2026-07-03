@@ -13,6 +13,8 @@ interface ProductDetailPageProps {
   products: Product[];
   setSelectedProduct: (product: Product | null) => void;
   setIsAIStylistOpen: (open: boolean) => void;
+  setSelectedCategory?: (cat: string) => void;
+  setActiveView?: (view: 'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop' | 'tracking') => void;
 }
 
 export default function ProductDetailPage({
@@ -25,6 +27,8 @@ export default function ProductDetailPage({
   products,
   setSelectedProduct,
   setIsAIStylistOpen,
+  setSelectedCategory,
+  setActiveView,
 }: ProductDetailPageProps) {
   // Local Interactive States
   const [activeImage, setActiveImage] = useState(product.images[0]);
@@ -33,6 +37,29 @@ export default function ProductDetailPage({
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedOccasion, setSelectedOccasion] = useState<'office' | 'party' | 'home' | 'college'>('office');
   const [isAddedToast, setIsAddedToast] = useState(false);
+
+  // Hover to zoom effect states for detailed inspection of luxury fabrics
+  const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({
+    transformOrigin: 'center center',
+    transform: 'scale(1)'
+  });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomStyle({
+      transformOrigin: `${x}% ${y}%`,
+      transform: 'scale(2.2)'
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setZoomStyle({
+      transformOrigin: 'center center',
+      transform: 'scale(1)'
+    });
+  };
 
   // Synchronize active image state if selected product changes
   useEffect(() => {
@@ -132,7 +159,15 @@ export default function ProductDetailPage({
         {/* 1. Header Navigation Back Path */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-stone-200/60 pb-4 mb-8 gap-4">
           <button
-            onClick={onBack}
+            onClick={() => {
+              if (setActiveView) {
+                setActiveView('shop');
+              }
+              if (setSelectedCategory) {
+                setSelectedCategory('all');
+              }
+              onBack();
+            }}
             className="flex items-center space-x-2 text-xs font-mono font-bold uppercase text-stone-600 hover:text-stone-900 group cursor-pointer transition-colors"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -140,11 +175,39 @@ export default function ProductDetailPage({
           </button>
 
           <div className="flex items-center space-x-1.5 text-xs text-stone-400 font-outfit">
-            <span className="hover:underline cursor-pointer" onClick={onBack}>Collections</span>
+            <button
+              onClick={() => {
+                if (setActiveView) setActiveView('home');
+                setSelectedProduct(null);
+              }}
+              className="hover:underline cursor-pointer hover:text-stone-900 bg-transparent border-none p-0 text-stone-400 font-outfit text-xs"
+            >
+              Home
+            </button>
             <ChevronRight className="w-3 h-3 text-stone-300" />
-            <span className="text-stone-500 capitalize">{product.category}</span>
+            <button
+              onClick={() => {
+                if (setActiveView) setActiveView('shop');
+                if (setSelectedCategory) setSelectedCategory('all');
+                setSelectedProduct(null);
+              }}
+              className="hover:underline cursor-pointer hover:text-stone-900 bg-transparent border-none p-0 text-stone-400 font-outfit text-xs"
+            >
+              Collections
+            </button>
             <ChevronRight className="w-3 h-3 text-stone-300" />
-            <span className="text-stone-900 font-medium truncate max-w-[200px]">{product.name}</span>
+            <button
+              onClick={() => {
+                if (setActiveView) setActiveView('shop');
+                if (setSelectedCategory) setSelectedCategory(product.category);
+                setSelectedProduct(null);
+              }}
+              className="hover:underline cursor-pointer hover:text-stone-900 capitalize bg-transparent border-none p-0 text-stone-400 font-outfit text-xs"
+            >
+              {product.category}
+            </button>
+            <ChevronRight className="w-3 h-3 text-stone-300" />
+            <span className="text-stone-900 font-medium truncate max-w-[120px] sm:max-w-[200px]">{product.name}</span>
           </div>
         </div>
 
@@ -153,24 +216,33 @@ export default function ProductDetailPage({
           
           {/* Left Block: Image Carousel and Thumbnails (Col span 7) */}
           <div className="lg:col-span-7 space-y-4">
-            {/* Large primary visual */}
-            <div className="aspect-[3/4] bg-stone-50 rounded-2xl overflow-hidden border border-stone-200/80 relative">
+            {/* Large primary visual with smooth interactive hover-to-zoom */}
+            <div 
+              className="aspect-[3/4] bg-stone-50 rounded-2xl overflow-hidden border border-stone-200/80 relative cursor-zoom-in select-none"
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+            >
               <img
                 src={activeImage}
                 alt={product.name}
                 referrerPolicy="no-referrer"
-                className="w-full h-full object-cover object-center"
+                className="w-full h-full object-cover object-center transition-transform duration-150 ease-out"
+                style={zoomStyle}
               />
               {discountPercent > 0 && (
-                <span className="absolute top-4 left-4 bg-red-600 text-[#fafaf9] text-xs font-sans font-bold px-3 py-1 rounded shadow-md">
+                <span className="absolute top-4 left-4 bg-red-600 text-[#fafaf9] text-xs font-sans font-bold px-3 py-1 rounded shadow-md pointer-events-none">
                   -{discountPercent}% OFF
                 </span>
               )}
               {product.isTrending && (
-                <span className="absolute top-4 right-4 bg-[#c2a46c] text-white text-[10px] uppercase tracking-wider px-3 py-1 rounded font-bold shadow-md">
+                <span className="absolute top-4 right-4 bg-[#c2a46c] text-white text-[10px] uppercase tracking-wider px-3 py-1 rounded font-bold shadow-md pointer-events-none">
                   Best Seller
                 </span>
               )}
+              {/* Subtle visual prompt */}
+              <div className="absolute bottom-4 left-4 right-4 text-center bg-black/40 backdrop-blur-xs text-white text-[10px] font-mono tracking-widest py-1.5 rounded-lg opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity pointer-events-none uppercase">
+                Hover to Zoom Fabric Textures
+              </div>
             </div>
 
             {/* Carousel alternate angle selector thumbnails */}

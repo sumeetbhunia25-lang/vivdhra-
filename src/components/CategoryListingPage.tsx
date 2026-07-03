@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sliders, Check, RotateCcw, ChevronRight, Star, HelpCircle, ArrowRight } from 'lucide-react';
+import { Sliders, Check, RotateCcw, ChevronRight, ChevronLeft, Star, HelpCircle, ArrowRight } from 'lucide-react';
 import { Product, WishlistItem } from '../types';
-import ZaraStyleProductCard from './ZaraStyleProductCard';
+import VividhraStyleProductCard from './VividhraStyleProductCard';
 
 interface CategoryListingPageProps {
   selectedCategory: string;
@@ -11,10 +11,13 @@ interface CategoryListingPageProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   setSelectedProduct: (product: Product | null) => void;
+  onQuickView: (product: Product | null) => void;
   handleAddToCart: (product: Product, size: 'XS' | 'S' | 'M' | 'L' | 'XL', color: string) => void;
   handleToggleWishlist: (productId: string) => void;
   wishlist: WishlistItem[];
   categoriesList: Array<{ id: string; label: string; image: string }>;
+  onBack?: () => void;
+  setActiveView?: (view: 'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop' | 'tracking') => void;
 }
 
 export default function CategoryListingPage({
@@ -24,10 +27,13 @@ export default function CategoryListingPage({
   searchQuery,
   setSearchQuery,
   setSelectedProduct,
+  onQuickView,
   handleAddToCart,
   handleToggleWishlist,
   wishlist,
   categoriesList,
+  onBack,
+  setActiveView,
 }: CategoryListingPageProps) {
   // Local Filter States
   const [selectedMaterial, setSelectedMaterial] = useState<string>('all');
@@ -159,57 +165,153 @@ export default function CategoryListingPage({
     setSearchQuery('');
   };
 
+  if (selectedCategory === 'all' && !searchQuery) {
+    return (
+      <div className="pt-24 md:pt-32 pb-24 bg-[#FDFCFB]">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          
+          {/* Breadcrumb representing the collections hub */}
+          <div className="flex items-center space-x-2 text-xs text-stone-500 font-outfit mb-6">
+            <button 
+              onClick={() => {
+                if (setActiveView) {
+                  setActiveView('home');
+                }
+              }} 
+              className="hover:text-[#1c1917] hover:underline cursor-pointer bg-transparent border-none p-0"
+            >
+              Home
+            </button>
+            <ChevronRight className="w-3 h-3 text-stone-400" />
+            <span className="text-stone-900 font-medium tracking-wide uppercase text-[10px] bg-stone-100 px-2 py-0.5 rounded-sm">
+              Collections Hub
+            </span>
+          </div>
+
+          {/* Section Header */}
+          <div className="text-left mb-10 max-w-2xl">
+            <span className="text-[10px] uppercase tracking-[0.25em] text-[#c2a46c] font-bold block mb-1 font-mono">
+              Vividhra Atelier
+            </span>
+            <h1 className="serif-header text-2xl md:text-3xl font-semibold tracking-tight text-[#1c1917] mb-2">
+              Explore Collections
+            </h1>
+            <p className="text-xs text-[#78716c] font-outfit leading-relaxed">
+              Discover exquisitely hand-tailored premium garments arranged by curated silhouettes, textures, and sustainable drops.
+            </p>
+          </div>
+
+          {/* Sub-sections Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {categoriesList
+              .filter((cat) => cat.id !== 'all')
+              .map((cat, idx) => {
+                const count = products.filter((p) => {
+                  if (cat.id === 'atelier-ai') return ['p14', 'p15', 'p16', 'p17', 'p18', 'p19'].includes(p.id);
+                  if (cat.id === 'new-arrivals') return p.isTrending || p.id === 'p14' || p.id === 'p15';
+                  if (cat.id === 'best-sellers') return p.isTrending && p.price > 1600;
+                  if (cat.id === 'dresses') return p.category === 'dresses';
+                  if (cat.id === 'tops') return p.category === 'tops';
+                  if (cat.id === 'co-ords') return p.category === 'co-ords';
+                  if (cat.id === 'bottoms') return p.category === 'trousers';
+                  if (cat.id === 'kurtis') return p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('drape');
+                  if (cat.id === 'ethnic-sets') return p.name.toLowerCase().includes('set') || p.name.toLowerCase().includes('asymmetric');
+                  return p.category === cat.id;
+                }).length;
+
+                return (
+                  <motion.div
+                    key={cat.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: idx * 0.05 }}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className="group relative aspect-square rounded-xl overflow-hidden cursor-pointer shadow-sm hover:shadow-lg transition-all duration-500 border border-stone-200/40"
+                  >
+                    {/* Background image */}
+                    <div className="absolute inset-0">
+                      <img
+                        src={cat.image}
+                        alt={cat.label}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-stone-900/35 group-hover:bg-stone-900/30 transition-colors duration-500" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-stone-950/75 via-transparent to-transparent" />
+                    </div>
+
+                    {/* Content */}
+                    <div className="absolute inset-0 p-4 flex flex-col justify-end text-white">
+                      <span className="text-[8.5px] uppercase tracking-wider text-stone-200 font-mono mb-0.5">
+                        {count} {count === 1 ? 'Garment' : 'Garments'}
+                      </span>
+                      <h2 className="serif-header text-sm font-semibold tracking-wide text-white leading-snug uppercase">
+                        {cat.label}
+                      </h2>
+                      <div className="flex items-center gap-1 text-[10px] font-outfit text-stone-300 group-hover:text-white transition-colors mt-1">
+                        <span>Enter</span>
+                        <ArrowRight className="w-2.5 h-2.5 transform group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pt-24 md:pt-32 pb-24 bg-[#FDFCFB]">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         
         {/* 1. Category Breadcrumbs */}
-        <div className="flex items-center space-x-2 text-xs text-stone-500 font-outfit mb-6">
+        <div className="flex items-center space-x-2 text-xs text-stone-500 font-outfit mb-3">
           <button 
-            onClick={() => setSelectedCategory('all')} 
-            className="hover:text-[#1c1917] hover:underline"
+            onClick={() => {
+              if (setActiveView) {
+                setActiveView('home');
+              }
+            }} 
+            className="hover:text-[#1c1917] hover:underline cursor-pointer bg-transparent border-none p-0"
           >
             Home
           </button>
           <ChevronRight className="w-3 h-3 text-stone-400" />
-          <span className="text-stone-400">Collections</span>
+          <button 
+            onClick={() => setSelectedCategory('all')} 
+            className="text-stone-500 hover:text-[#1c1917] hover:underline cursor-pointer p-0 bg-transparent border-none"
+          >
+            Collections
+          </button>
           <ChevronRight className="w-3 h-3 text-stone-400" />
           <span className="text-stone-900 font-medium tracking-wide uppercase text-[10px] bg-stone-100 px-2 py-0.5 rounded-sm">
             {activeCategoryLabel}
           </span>
         </div>
 
-        {/* 2. Brand Category Banner */}
-        <div className="relative overflow-hidden bg-[#1c1917] rounded-3xl p-8 md:p-12 text-white mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm border border-stone-800">
-          <div className="space-y-3 max-w-2xl relative z-10 text-left">
-            <span className="text-[10px] uppercase tracking-[0.25em] font-mono text-[#dfba73] font-bold">
-              Exclusive Sustainable Atelier
-            </span>
-            <h1 className="serif-header text-3xl md:text-5xl font-bold tracking-tight text-[#fafaf9]">
-              {activeCategoryLabel}
-            </h1>
-            <p className="text-xs md:text-sm text-stone-300 font-light leading-relaxed">
-              Discover clean architectural cuts, tailored silhouettes, and organic textiles crafted for comfort. All proceeds direct support to veterinary aid, elder care sanctuaries, and child educational drives.
-            </p>
-          </div>
-          
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 shrink-0 text-left self-start md:self-auto min-w-[200px]">
-            <p className="text-[10px] uppercase font-mono tracking-wider text-[#dfba73] font-bold">
-              Sustainable Promise
-            </p>
-            <p className="text-xs text-stone-200 mt-1">
-              ✓ 100% GOTS Cotton & Linen
-            </p>
-            <p className="text-xs text-stone-200 mt-0.5">
-              ✓ Tailored in Mumbai, India
-            </p>
-            <p className="text-xs text-stone-200 mt-0.5">
-              ✓ Empowering Communities
-            </p>
-          </div>
-          
-          {/* Subtle gold glow behind banner */}
-          <div className="absolute -right-24 -bottom-24 w-64 h-64 bg-[#c2a46c]/15 rounded-full blur-3xl pointer-events-none" />
+        {selectedCategory !== 'all' && (
+          <button
+            onClick={() => {
+              if (onBack) {
+                onBack();
+              } else {
+                setSelectedCategory('all');
+              }
+            }}
+            className="mb-3 inline-flex items-center gap-1 text-xs font-semibold font-outfit text-[#c2a46c] hover:text-[#1c1917] transition-colors bg-transparent border-none p-0 cursor-pointer"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            <span>Back to Collections Hub</span>
+          </button>
+        )}
+
+        {/* 2. Simple Category Title */}
+        <div className="mb-2 text-left">
+          <h1 className="serif-header text-lg md:text-xl font-semibold tracking-tight text-[#1c1917]">
+            {activeCategoryLabel}
+          </h1>
         </div>
 
         {/* 3. Filter & Sort Toolbar for tablet/desktop */}
@@ -368,13 +470,14 @@ export default function CategoryListingPage({
               <div>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-full">
                   {finalFilteredProducts.map((prod) => (
-                    <ZaraStyleProductCard
+                    <VividhraStyleProductCard
                       key={prod.id}
                       product={prod}
                       onAddToCart={handleAddToCart}
                       onWishlistToggle={handleToggleWishlist}
                       isWishlisted={wishlist.some((w) => w.productId === prod.id)}
-                      onQuickView={(p) => setSelectedProduct(p)}
+                      onQuickView={onQuickView}
+                      onSelectProduct={setSelectedProduct}
                       className="h-full"
                     />
                   ))}
