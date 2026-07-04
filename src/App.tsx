@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'motion/react';
 import gsap from 'gsap';
+import Lenis from 'lenis';
 import {
   ShoppingBag,
   Heart,
@@ -119,6 +120,32 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
+  // Drag-scroll state for popular category bubbles
+  const bubbleScrollRef = useRef<HTMLDivElement>(null);
+  const [isBubbleDragging, setIsBubbleDragging] = useState(false);
+  const [bubbleDragStartX, setBubbleDragStartX] = useState(0);
+  const [bubbleScrollLeft, setBubbleScrollLeft] = useState(0);
+
+  const handleBubbleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsBubbleDragging(true);
+    setBubbleDragStartX(e.pageX - (bubbleScrollRef.current?.offsetLeft || 0));
+    setBubbleScrollLeft(bubbleScrollRef.current?.scrollLeft || 0);
+  };
+
+  const handleBubbleMouseLeaveOrUp = () => {
+    setIsBubbleDragging(false);
+  };
+
+  const handleBubbleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isBubbleDragging) return;
+    e.preventDefault();
+    const x = e.pageX - (bubbleScrollRef.current?.offsetLeft || 0);
+    const walk = (x - bubbleDragStartX) * 1.5; // sensitivity
+    if (bubbleScrollRef.current) {
+      bubbleScrollRef.current.scrollLeft = bubbleScrollLeft - walk;
+    }
+  };
+
   // Global Navigation History State and Scroll Restoration
   interface NavigationHistoryItem {
     activeView: 'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop' | 'tracking';
@@ -211,6 +238,32 @@ export default function App() {
       }, 50);
     }
   }, [activeView, selectedCategory, selectedProduct, searchQuery]);
+
+  // Initialize Lenis for buttery smooth scrolling across the entire application on all devices
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Custom premium smooth transition
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1.1,
+      touchMultiplier: 1.5,
+    });
+
+    let rafId: number;
+    function raf(time: number) {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    }
+
+    rafId = requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
   
   // Checkout states
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -2023,7 +2076,18 @@ export default function App() {
 
                   {/* HORIZONTAL CATEGORY BUBBLES */}
                   <div>
-                    <div className="flex items-center gap-6 overflow-x-auto scrollbar-none py-2">
+                    <div 
+                      ref={bubbleScrollRef}
+                      onMouseDown={handleBubbleMouseDown}
+                      onMouseLeave={handleBubbleMouseLeaveOrUp}
+                      onMouseUp={handleBubbleMouseLeaveOrUp}
+                      onMouseMove={handleBubbleMouseMove}
+                      className="flex items-center gap-6 overflow-x-auto scroll-smooth py-2 select-none cursor-grab active:cursor-grabbing [-webkit-overflow-scrolling:touch] scrollbar-none"
+                      style={{
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none'
+                      }}
+                    >
                       {[
                         { label: 'Dresses', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=80&w=200', query: 'dresses' },
                         { label: 'Footwear', image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=200', query: 'trousers' },
@@ -2041,7 +2105,7 @@ export default function App() {
                             setSelectedCategory('all');
                             setIsSearchOpen(false);
                           }}
-                          className="flex flex-col items-center flex-shrink-0 group cursor-pointer"
+                          className="flex flex-col items-center flex-shrink-0 group cursor-pointer select-none"
                         >
                           <div className="w-20 h-20 rounded-full overflow-hidden border border-stone-200/80 shadow-2xs transition-transform duration-300 group-hover:scale-105 group-hover:border-[#c2a46c]">
                             <img

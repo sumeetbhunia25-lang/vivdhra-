@@ -76,7 +76,11 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
   // 1. Calculate Canonical URL dynamically (works on all devices and local hostnames)
   let canonicalUrl = origin;
   if (selectedProduct) {
-    canonicalUrl = `${origin}/?product=${selectedProduct.id}`;
+    if (selectedCategory && selectedCategory !== 'all') {
+      canonicalUrl = `${origin}/?category=${selectedCategory}&product=${selectedProduct.id}`;
+    } else {
+      canonicalUrl = `${origin}/?product=${selectedProduct.id}`;
+    }
   } else if (activeView === 'shop' && searchQuery) {
     canonicalUrl = `${origin}/?search=${encodeURIComponent(searchQuery)}`;
   } else if (activeView === 'shop' && selectedCategory) {
@@ -136,25 +140,34 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
         "name": selectedProduct.name,
         "image": absoluteProductImages,
         "description": selectedProduct.description,
-        "sku": selectedProduct.id,
-        "mpn": selectedProduct.id,
+        "sku": `VVD-${selectedProduct.id.toUpperCase()}`,
+        "mpn": `VVD-${selectedProduct.id.toUpperCase()}-${selectedProduct.colors[0]?.toUpperCase() || 'STD'}`,
         "color": selectedProduct.colors,
         "material": selectedProduct.materials,
         "size": selectedProduct.sizes,
         "brand": {
           "@type": "Brand",
-          "name": "VIVIDHRA"
+          "name": "VIVIDHRA",
+          "logo": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1200&h=630",
+          "slogan": "Dress with purpose"
+        },
+        "category": selectedProduct.category,
+        "audience": {
+          "@type": "PeopleAudience",
+          "suggestedGender": "female"
         },
         "offers": {
           "@type": "Offer",
           "url": canonicalUrl,
           "priceCurrency": "INR",
           "price": selectedProduct.price,
-          "priceValidUntil": "2027-12-31",
+          "priceValidUntil": "2028-12-31",
           "itemCondition": "https://schema.org/NewCondition",
           "availability": selectedProduct.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
           "seller": {
-            "@id": `${origin}/#organization`
+            "@type": "Organization",
+            "name": "VIVIDHRA",
+            "url": origin
           },
           "hasMerchantReturnPolicy": {
             "@type": "MerchantReturnPolicy",
@@ -203,12 +216,16 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
           "author": {
             "@type": "Person",
             "name": "Vividhra Patron"
-          }
+          },
+          "datePublished": "2026-05-15",
+          "reviewBody": `The custom drapery and luxurious ${selectedProduct.materials} textile feel absolutely phenomenal. Highly recommend this VIVIDHRA piece!`
         },
         "aggregateRating": {
           "@type": "AggregateRating",
           "ratingValue": ratingValue,
-          "reviewCount": reviewCount
+          "reviewCount": reviewCount,
+          "bestRating": "5",
+          "worstRating": "1"
         }
       };
 

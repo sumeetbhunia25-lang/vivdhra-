@@ -429,9 +429,6 @@ export default function PremiumHero({
           <p className="text-stone-300 font-sans font-light tracking-[0.25em] text-[11px] sm:text-[13px] uppercase">
             Dress with purpose &bull; Women Exclusive
           </p>
-          <p className="text-stone-400 font-mono text-[9px] uppercase tracking-widest max-w-md mx-auto leading-relaxed">
-            tailored coordinates with biological organic structures
-          </p>
         </div>
 
         {/* Elegant Action Buttons with Magnetic Effects removed per user request */}
