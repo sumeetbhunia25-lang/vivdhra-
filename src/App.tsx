@@ -361,27 +361,48 @@ export default function App() {
     };
   }, [products, selectedCategory, searchQuery]);
 
-  // Fetch full-stack database states
-  const loadData = async () => {
-    try {
-      const [prodRes, targetRes, logRes, orderRes] = await Promise.all([
-        fetch('/api/products').then((r) => r.json()),
-        fetch('/api/donations/targets').then((r) => r.json()),
-        fetch('/api/donations/logs').then((r) => r.json()),
-        fetch('/api/orders').then((r) => r.json()),
-      ]);
+  // Fetch full-stack database states with robust automatic retries
+  const loadData = async (retries = 5, delayMs = 1500) => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const fetchJSON = async (url: string) => {
+          const res = await fetch(url);
+          if (!res.ok) {
+            throw new Error(`HTTP error ${res.status} on ${url}`);
+          }
+          const contentType = res.headers.get('content-type') || '';
+          if (!contentType.includes('application/json')) {
+            throw new Error(`Expected JSON but got ${contentType} on ${url}`);
+          }
+          return res.json();
+        };
 
-      setProducts(prodRes);
-      setCharities(targetRes);
-      setDonationLogs(logRes);
-      setOrders(orderRes);
+        const [prodRes, targetRes, logRes, orderRes] = await Promise.all([
+          fetchJSON('/api/products'),
+          fetchJSON('/api/donations/targets'),
+          fetchJSON('/api/donations/logs'),
+          fetchJSON('/api/orders'),
+        ]);
 
-      // Pre-select checkout charities
-      if (targetRes.length > 0) {
-        setCheckoutCharities(targetRes.map((c: any) => c.id));
+        setProducts(prodRes);
+        setCharities(targetRes);
+        setDonationLogs(logRes);
+        setOrders(orderRes);
+
+        // Pre-select checkout charities
+        if (targetRes.length > 0) {
+          setCheckoutCharities(targetRes.map((c: any) => c.id));
+        }
+        
+        return; // Success!
+      } catch (err) {
+        if (attempt === retries) {
+          console.error('Error loading database structures:', err);
+        } else {
+          console.warn(`Attempt ${attempt} to load database failed. Retrying in ${delayMs}ms...`, err);
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
       }
-    } catch (err) {
-      console.error('Error loading database structures:', err);
     }
   };
 
@@ -394,17 +415,32 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  const fetchAndSetProfile = async (uid?: string) => {
-    try {
-      const savedUid = uid || localStorage.getItem('vividhra_user_uid');
-      const url = savedUid ? `/api/user/profile?uid=${savedUid}` : '/api/user/profile';
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.email) {
-        setUser(data);
+  const fetchAndSetProfile = async (uid?: string, retries = 5, delayMs = 1500) => {
+    const savedUid = uid || localStorage.getItem('vividhra_user_uid');
+    const url = savedUid ? `/api/user/profile?uid=${savedUid}` : '/api/user/profile';
+    
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`HTTP error ${res.status}`);
+        }
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error(`Expected JSON but got ${contentType}`);
+        }
+        const data = await res.json();
+        if (data.email) {
+          setUser(data);
+        }
+        return;
+      } catch (err) {
+        if (attempt === retries) {
+          console.error('Error fetching user profile:', err);
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
       }
-    } catch (err) {
-      console.error(err);
     }
   };
 
@@ -792,6 +828,7 @@ export default function App() {
         selectedProduct={selectedProduct}
         selectedCategory={selectedCategory}
         products={products}
+        searchQuery={searchQuery}
       />
       
       <AnimatePresence>
@@ -864,7 +901,7 @@ export default function App() {
             >
               <ProductDetailPage
                 product={selectedProduct}
-                onBack={() => setSelectedProduct(null)}
+                onBack={handleBack}
                 onAddToCart={(p, size, color, qty) => {
                   const qtyToAdd = qty || 1;
                   setCart((prev) => {
@@ -903,6 +940,12 @@ export default function App() {
                 setIsAIStylistOpen={setIsAIStylistOpen}
                 setSelectedCategory={setSelectedCategory}
                 setActiveView={setActiveView}
+                navHistory={navHistory}
+                setNavHistory={setNavHistory}
+                isGoingBackRef={isGoingBackRef}
+                categoriesList={categoriesList}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
               />
             </motion.div>
           )}
@@ -930,6 +973,9 @@ export default function App() {
                 categoriesList={categoriesList}
                 onBack={handleBack}
                 setActiveView={setActiveView}
+                navHistory={navHistory}
+                setNavHistory={setNavHistory}
+                isGoingBackRef={isGoingBackRef}
               />
             </motion.div>
           )}
@@ -1875,186 +1921,323 @@ export default function App() {
         </div>
       )}
 
-      {/* 7. Interactive Search Modal */}
+      {/* 7. Premium Full-Screen Search Overlay */}
       <AnimatePresence>
         {isSearchOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 pt-20 backdrop-blur-xs"
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-[#FDFCFB] z-50 flex flex-col overflow-y-auto"
+            id="premium-search-overlay"
           >
-            <div className="absolute inset-0" onClick={() => setIsSearchOpen(false)} />
-            
-            <motion.div
-              initial={{ scale: 0.94, y: -20, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.94, y: -20, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 220, mass: 1 }}
-              className="bg-white rounded-2xl w-full max-w-2xl relative z-10 p-6 border shadow-2xl space-y-4"
-            >
-            <div className="flex items-center justify-between border-b pb-3">
-              <span className="serif-header font-bold text-stone-900">Explore the Atelier catalog</span>
-              <button onClick={() => setIsSearchOpen(false)} className="text-stone-500 hover:text-stone-900 cursor-pointer">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search by fabrics, silhouettes, or styles (e.g. Linen, Co-ord)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    addRecentSearch(searchQuery);
-                  }
-                }}
-                className="w-full pl-10 pr-10 py-3 bg-stone-100 border rounded-xl focus:outline-hidden focus:border-stone-900 focus:bg-white text-xs font-outfit"
-                autoFocus
-              />
-              <Search className="w-4 h-4 text-stone-400 absolute left-3 top-3.5" />
-              
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-3 p-1 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-200 transition-all cursor-pointer"
-                  title="Clear search"
+            {/* Search Header Area */}
+            <div className="sticky top-0 bg-[#FDFCFB]/95 backdrop-blur-md z-10 border-b border-stone-200/50 py-3.5 px-4 md:px-8">
+              <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+                {/* Rounded search bar wrapped in form for proper device submission */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (searchQuery.trim()) {
+                      addRecentSearch(searchQuery);
+                      setActiveView('shop');
+                      setSelectedCategory('all');
+                      setIsSearchOpen(false);
+                    }
+                  }}
+                  className="relative flex-1"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <input
+                    id="search-input-field"
+                    type="text"
+                    placeholder="Search For..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-11 pr-10 py-3 bg-[#F4F3F0] border-0 rounded-full focus:outline-none focus:ring-1 focus:ring-stone-400 focus:bg-white text-[14px] text-stone-900 placeholder-stone-500 font-outfit transition-all duration-300"
+                    autoFocus
+                  />
+                  <Search className="w-4 h-4 text-stone-500 absolute left-4 top-3.5" />
+                  
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-4 top-3.5 p-1 rounded-full text-stone-400 hover:text-stone-700 transition-all cursor-pointer"
+                      title="Clear search"
+                      id="search-clear-btn"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </form>
+
+                {/* Cancel button */}
+                <button
+                  id="search-cancel-btn"
+                  onClick={() => {
+                    setIsSearchOpen(false);
+                    setSearchQuery('');
+                  }}
+                  className="text-stone-900 font-outfit font-medium text-[14px] px-2 py-2 hover:text-stone-600 transition-all cursor-pointer select-none"
+                >
+                  Cancel
                 </button>
-              )}
+              </div>
             </div>
 
-            {searchQuery && (
-              <p className="text-[11px] text-stone-500">
-                Found {filteredProducts.length} matching designs for &ldquo;{searchQuery}&rdquo;
-              </p>
-            )}
+            {/* Search Content Body */}
+            <div className="flex-1 max-w-4xl w-full mx-auto px-4 md:px-8 py-6 md:py-8 space-y-8">
+              {!searchQuery ? (
+                <>
+                  {/* POPULAR CHOICES SECTION */}
+                  <div>
+                    <h3 className="text-[11px] uppercase tracking-widest font-mono font-bold text-stone-400 mb-3.5" id="popular-choices-title">
+                      Popular Choices
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                      {[
+                        { label: 'Casual Wear', query: 'casual' },
+                        { label: 'Party Wear', query: 'party' },
+                        { label: 'Dresses', query: 'dresses' },
+                        { label: 'Formal Wear', query: 'formal' },
+                        { label: 'Mini Dresses', query: 'dress' }
+                      ].map((chip) => (
+                        <button
+                          key={chip.label}
+                          id={`popular-chip-${chip.label.toLowerCase().replace(/\s+/g, '-')}`}
+                          onClick={() => {
+                            setSearchQuery(chip.query);
+                            addRecentSearch(chip.query);
+                            setActiveView('shop');
+                            setSelectedCategory('all');
+                            setIsSearchOpen(false);
+                          }}
+                          className="border border-stone-300/80 rounded-lg px-4 py-3 text-center font-outfit text-[13px] text-stone-800 hover:border-stone-900 bg-white hover:bg-stone-50 transition-all duration-200 cursor-pointer shadow-2xs hover:shadow-xs"
+                        >
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-            {!searchQuery ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                {/* Recent Searches */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-wider font-mono font-bold text-stone-500 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-[#c2a46c]" />
-                      Recent Searches
-                    </span>
-                    {recentSearches.length > 0 && (
-                      <button 
-                        onClick={clearRecentSearches}
-                        className="text-[10px] uppercase tracking-wider font-mono text-red-600 hover:text-red-700 font-bold transition-all cursor-pointer"
-                      >
-                        Clear All
-                      </button>
-                    )}
+                  {/* HORIZONTAL CATEGORY BUBBLES */}
+                  <div>
+                    <div className="flex items-center gap-6 overflow-x-auto scrollbar-none py-2">
+                      {[
+                        { label: 'Dresses', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=80&w=200', query: 'dresses' },
+                        { label: 'Footwear', image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=200', query: 'trousers' },
+                        { label: 'Tops', image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=200', query: 'tops' },
+                        { label: 'Co-ords', image: 'https://images.unsplash.com/photo-1548624149-f9b1859aa7d0?auto=format&fit=crop&q=80&w=200', query: 'co-ord' },
+                        { label: 'Outerwear', image: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&q=80&w=200', query: 'blazers' }
+                      ].map((cat) => (
+                        <div
+                          key={cat.label}
+                          id={`category-bubble-${cat.label.toLowerCase()}`}
+                          onClick={() => {
+                            setSearchQuery(cat.query);
+                            addRecentSearch(cat.query);
+                            setActiveView('shop');
+                            setSelectedCategory('all');
+                            setIsSearchOpen(false);
+                          }}
+                          className="flex flex-col items-center flex-shrink-0 group cursor-pointer"
+                        >
+                          <div className="w-20 h-20 rounded-full overflow-hidden border border-stone-200/80 shadow-2xs transition-transform duration-300 group-hover:scale-105 group-hover:border-[#c2a46c]">
+                            <img
+                              src={cat.image}
+                              alt={cat.label}
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                          <span className="text-[12px] text-stone-700 font-medium text-center mt-2.5 font-outfit group-hover:text-[#c2a46c] transition-colors">
+                            {cat.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* RECOMMENDED FOR YOU */}
+                  <div>
+                    <h3 className="text-[11px] uppercase tracking-widest font-mono font-bold text-stone-400 mb-4" id="recommended-choices-title">
+                      Recommended for You
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {products && products.length > 0 ? (
+                        products
+                          .filter(p => ['p15', 'p17', 'p19', 'p20'].includes(p.id) || p.isTrending)
+                          .slice(0, 4)
+                          .map((p) => (
+                            <div
+                              key={p.id}
+                              id={`recommended-card-${p.id}`}
+                              onClick={() => {
+                                setSelectedProduct(p);
+                                setIsSearchOpen(false);
+                              }}
+                              className="group bg-[#F4F3F0]/25 rounded-xl overflow-hidden hover:shadow-sm transition-all duration-300 flex flex-col cursor-pointer pb-2"
+                            >
+                              <div className="aspect-[3/4] w-full overflow-hidden bg-stone-100 relative">
+                                <img
+                                  src={p.images[0]}
+                                  alt={p.name}
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                  referrerPolicy="no-referrer"
+                                />
+                                {/* Gift Icon overlay on Recommended card matching reference image mockup */}
+                                <div className="absolute bottom-3 left-3 w-8 h-8 bg-black rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110">
+                                  <Gift className="w-4 h-4 text-white" />
+                                </div>
+                              </div>
+                              <p className="font-outfit text-xs font-medium text-stone-800 mt-2 px-2 truncate">
+                                {p.name}
+                              </p>
+                              <p className="font-mono text-[11px] text-stone-500 px-2 mt-0.5">
+                                ₹{p.price}
+                              </p>
+                            </div>
+                          ))
+                      ) : (
+                        <div className="col-span-full py-4 text-stone-400 italic text-xs">
+                          Loading recommendations...
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
-                  {recentSearches.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {recentSearches.map((q, idx) => (
-                        <div 
-                          key={idx} 
-                          className="flex items-center bg-stone-50 border border-stone-200/80 rounded-lg py-1 px-2.5 transition-all hover:bg-stone-100 hover:border-stone-300 group"
+                  {/* RECENT SEARCHES HISTORY */}
+                  {recentSearches.length > 0 && (
+                    <div className="border-t border-stone-200/50 pt-6 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] uppercase tracking-wider font-mono font-bold text-stone-400 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-stone-400" />
+                          Recent Searches
+                        </span>
+                        <button
+                          id="clear-recent-searches-btn"
+                          onClick={clearRecentSearches}
+                          className="text-[10px] uppercase tracking-wider font-mono text-stone-500 hover:text-red-600 font-bold transition-all cursor-pointer"
                         >
-                          <button
-                            onClick={() => {
-                              setSearchQuery(q);
-                              addRecentSearch(q);
-                            }}
-                            className="text-xs text-stone-700 font-outfit cursor-pointer mr-1.5 hover:text-[#c2a46c] transition-all"
+                          Clear All
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {recentSearches.map((q, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center bg-stone-100 border border-stone-200/60 rounded-full py-1 px-3 transition-all hover:bg-stone-200/60"
                           >
-                            {q}
-                          </button>
-                          <button
-                            onClick={() => removeRecentSearch(q)}
-                            className="text-stone-400 hover:text-stone-600 rounded transition-all cursor-pointer p-0.5"
-                            title="Remove from history"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
+                            <button
+                              onClick={() => {
+                                setSearchQuery(q);
+                                setActiveView('shop');
+                                setSelectedCategory('all');
+                                setIsSearchOpen(false);
+                              }}
+                              className="text-xs text-stone-700 font-outfit cursor-pointer mr-1.5 hover:text-[#c2a46c] transition-all"
+                            >
+                              {q}
+                            </button>
+                            <button
+                              onClick={() => removeRecentSearch(q)}
+                              className="text-stone-400 hover:text-stone-600 rounded-full transition-all cursor-pointer"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* LIVE SEARCH RESULTS */
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between border-b border-stone-200/50 pb-2">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-[11px] uppercase tracking-widest font-mono font-bold text-stone-400">
+                        Live Discoveries ({filteredProducts.length})
+                      </h3>
+                      {filteredProducts.length > 0 && (
+                        <button
+                          onClick={() => {
+                            addRecentSearch(searchQuery);
+                            setActiveView('shop');
+                            setSelectedCategory('all');
+                            setIsSearchOpen(false);
+                          }}
+                          className="text-[11px] font-outfit font-bold text-[#c2a46c] hover:underline cursor-pointer bg-transparent border-none p-0"
+                        >
+                          View All in Shop &rarr;
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-stone-500 font-outfit">
+                      Showing matches for &ldquo;{searchQuery}&rdquo;
+                    </p>
+                  </div>
+
+                  {filteredProducts.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                      {filteredProducts.map((p) => (
+                        <div
+                          key={p.id}
+                          id={`live-match-card-${p.id}`}
+                          onClick={() => {
+                            addRecentSearch(searchQuery);
+                            setSelectedProduct(p);
+                            setIsSearchOpen(false);
+                          }}
+                          className="group bg-white rounded-xl overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col cursor-pointer border border-stone-100 pb-3"
+                        >
+                          <div className="aspect-[3/4] w-full overflow-hidden bg-stone-50 relative">
+                            <img
+                              src={p.images[0]}
+                              alt={p.name}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              referrerPolicy="no-referrer"
+                            />
+                            {p.originalPrice && p.originalPrice > p.price && (
+                              <span className="absolute top-2 right-2 bg-red-600 text-white text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-sm shadow-xs">
+                                Sale
+                              </span>
+                            )}
+                          </div>
+                          <div className="p-2.5 space-y-1">
+                            <h4 className="font-outfit text-xs font-semibold text-stone-900 group-hover:text-[#c2a46c] transition-colors truncate">
+                              {p.name}
+                            </h4>
+                            <p className="text-[10px] text-stone-500 font-outfit line-clamp-1">
+                              {p.materials}
+                            </p>
+                            <div className="flex items-center gap-1.5 pt-0.5">
+                              <span className="font-mono text-xs font-bold text-stone-900">₹{p.price}</span>
+                              {p.originalPrice && p.originalPrice > p.price && (
+                                <span className="font-mono text-[10px] text-stone-400 line-through">₹{p.originalPrice}</span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[11px] text-stone-400 font-light italic">
-                      No recent searches recorded yet. Explore our bespoke designs to populate your history.
-                    </p>
+                    <div className="py-12 text-center space-y-2">
+                      <p className="text-sm text-stone-500 font-light italic">
+                        No matching atelier designs located for &ldquo;{searchQuery}&rdquo;
+                      </p>
+                      <p className="text-xs text-stone-400 font-outfit">
+                        Try searching for materials like <strong className="text-stone-600">Linen</strong>, silhouettes like <strong className="text-stone-600">Asymmetric</strong>, or dress lines.
+                      </p>
+                    </div>
                   )}
                 </div>
-
-                {/* Trending Categories */}
-                <div className="space-y-3">
-                  <span className="text-[10px] uppercase tracking-wider font-mono font-bold text-stone-500 flex items-center gap-1.5">
-                    <TrendingUp className="w-3.5 h-3.5 text-[#c2a46c]" />
-                    Trending Categories
-                  </span>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {[
-                      { query: 'Linen', title: 'Summer Linens', desc: 'Lightweight & airy' },
-                      { query: 'Silk', title: 'Banarasi Silk', desc: 'Royal evening heritage' },
-                      { query: 'Co-ord', title: 'Premium Co-ords', desc: 'Pre-matched luxury sets' },
-                      { query: 'Cotton', title: 'Mulmul Cotton', desc: 'Buttery soft daywear' },
-                      { query: 'Kurta', title: 'Atelier Kurtas', desc: 'Traditional artisan fits' },
-                      { query: 'Donation', title: 'Dress with Purpose', desc: 'Ethical fashion lines' }
-                    ].map((item, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          setSearchQuery(item.query);
-                          addRecentSearch(item.query);
-                        }}
-                        className="p-2.5 rounded-xl border border-stone-200/80 bg-stone-50/50 hover:bg-stone-50 hover:border-stone-300 text-left transition-all cursor-pointer flex flex-col justify-between h-full group"
-                      >
-                        <span className="font-serif text-xs font-bold text-stone-900 group-hover:text-[#c2a46c] transition-all">
-                          {item.title}
-                        </span>
-                        <span className="text-[10px] text-stone-400 font-outfit leading-tight mt-0.5">
-                          {item.desc}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="max-h-60 overflow-y-auto divide-y">
-                {filteredProducts.length > 0 ? (
-                  filteredProducts.slice(0, 6).map((p) => (
-                    <div
-                      key={p.id}
-                      onClick={() => {
-                        addRecentSearch(searchQuery);
-                        setSelectedProduct(p);
-                        setIsSearchOpen(false);
-                      }}
-                      className="py-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 rounded-lg px-2"
-                    >
-                      <div className="flex items-center space-x-3 truncate">
-                        <img src={p.images[0]} alt="" referrerPolicy="no-referrer" className="w-10 h-12 object-cover rounded pointer-events-none" />
-                        <div>
-                          <p className="font-serif text-xs font-bold text-stone-900">{p.name}</p>
-                          <p className="text-[10px] text-stone-500 font-outfit">{p.materials}</p>
-                        </div>
-                      </div>
-                      <span className="font-mono text-xs text-stone-900">₹{p.price}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="py-6 text-center text-xs text-[#78716c] font-light italic">
-                    No matching atelier designs located for &ldquo;{searchQuery}&rdquo;. Try another search term or browse Trending.
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
 
       {/* 8. Checkout Purchase Overlay */}
       {isCheckoutOpen && (

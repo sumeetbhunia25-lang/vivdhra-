@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, Star, Sparkles, Shield, ArrowLeft, Plus, Minus, ShoppingBag, Truck, Undo2, ChevronRight, Check } from 'lucide-react';
 import { Product, WishlistItem } from '../types';
+import Breadcrumb from './Breadcrumb';
 
 interface ProductDetailPageProps {
   product: Product;
@@ -13,8 +14,14 @@ interface ProductDetailPageProps {
   products: Product[];
   setSelectedProduct: (product: Product | null) => void;
   setIsAIStylistOpen: (open: boolean) => void;
-  setSelectedCategory?: (cat: string) => void;
-  setActiveView?: (view: 'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop' | 'tracking') => void;
+  setSelectedCategory: (cat: string) => void;
+  setActiveView: (view: 'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop' | 'tracking') => void;
+  navHistory: any[];
+  setNavHistory: React.Dispatch<React.SetStateAction<any[]>>;
+  isGoingBackRef: React.MutableRefObject<boolean>;
+  categoriesList: Array<{ id: string; label: string }>;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
 }
 
 export default function ProductDetailPage({
@@ -29,6 +36,12 @@ export default function ProductDetailPage({
   setIsAIStylistOpen,
   setSelectedCategory,
   setActiveView,
+  navHistory,
+  setNavHistory,
+  isGoingBackRef,
+  categoriesList,
+  searchQuery,
+  setSearchQuery,
 }: ProductDetailPageProps) {
   // Local Interactive States
   const [activeImage, setActiveImage] = useState(product.images[0]);
@@ -160,55 +173,29 @@ export default function ProductDetailPage({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-stone-200/60 pb-4 mb-8 gap-4">
           <button
             onClick={() => {
-              if (setActiveView) {
-                setActiveView('shop');
-              }
-              if (setSelectedCategory) {
-                setSelectedCategory('all');
-              }
               onBack();
             }}
             className="flex items-center space-x-2 text-xs font-mono font-bold uppercase text-stone-600 hover:text-stone-900 group cursor-pointer transition-colors"
+            id="product-back-btn"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Back to listing</span>
+            <span>Back</span>
           </button>
 
-          <div className="flex items-center space-x-1.5 text-xs text-stone-400 font-outfit">
-            <button
-              onClick={() => {
-                if (setActiveView) setActiveView('home');
-                setSelectedProduct(null);
-              }}
-              className="hover:underline cursor-pointer hover:text-stone-900 bg-transparent border-none p-0 text-stone-400 font-outfit text-xs"
-            >
-              Home
-            </button>
-            <ChevronRight className="w-3 h-3 text-stone-300" />
-            <button
-              onClick={() => {
-                if (setActiveView) setActiveView('shop');
-                if (setSelectedCategory) setSelectedCategory('all');
-                setSelectedProduct(null);
-              }}
-              className="hover:underline cursor-pointer hover:text-stone-900 bg-transparent border-none p-0 text-stone-400 font-outfit text-xs"
-            >
-              Collections
-            </button>
-            <ChevronRight className="w-3 h-3 text-stone-300" />
-            <button
-              onClick={() => {
-                if (setActiveView) setActiveView('shop');
-                if (setSelectedCategory) setSelectedCategory(product.category);
-                setSelectedProduct(null);
-              }}
-              className="hover:underline cursor-pointer hover:text-stone-900 capitalize bg-transparent border-none p-0 text-stone-400 font-outfit text-xs"
-            >
-              {product.category}
-            </button>
-            <ChevronRight className="w-3 h-3 text-stone-300" />
-            <span className="text-stone-900 font-medium truncate max-w-[120px] sm:max-w-[200px]">{product.name}</span>
-          </div>
+          <Breadcrumb
+            activeView="shop"
+            selectedCategory={product.category}
+            selectedProduct={product}
+            searchQuery={searchQuery}
+            navHistory={navHistory}
+            setNavHistory={setNavHistory}
+            setActiveView={setActiveView}
+            setSelectedCategory={setSelectedCategory}
+            setSelectedProduct={setSelectedProduct}
+            setSearchQuery={setSearchQuery}
+            isGoingBackRef={isGoingBackRef}
+            categoriesList={categoriesList}
+          />
         </div>
 
         {/* 2. Main Dual-Column Product Details Lockup */}

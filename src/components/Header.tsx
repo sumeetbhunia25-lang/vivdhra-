@@ -229,36 +229,30 @@ export default function Header({
         {/* Right Side: Quick Utilities - fully visible on all devices per user request */}
         <div className="flex items-center space-x-1 xs:space-x-1.5 sm:space-x-3 md:space-x-4">
           {/* Real Inline Search Bar Input */}
-          <div className="relative flex items-center">
+          <div className="relative flex items-center cursor-pointer" onClick={openSearch}>
             <input
               type="text"
-              placeholder="Search clothes..."
+              placeholder="Search For"
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                // Force return to shop list to show instant search results
-                if (activeView !== 'home') {
-                  setActiveView('home');
-                }
+              readOnly
+              onClick={(e) => {
+                e.stopPropagation();
+                openSearch();
               }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  if (activeView !== 'home') {
-                    setActiveView('home');
-                  }
-                }
+              onFocus={(e) => {
+                e.target.blur();
+                openSearch();
               }}
-              className={`pl-8 pr-2.5 py-1 rounded-full text-[11px] sm:text-xs transition-all w-20 xs:w-28 sm:w-44 md:w-56 lg:w-64 border outline-none font-sans focus:ring-1 focus:ring-[#c2a46c] focus:border-[#c2a46c] ${
+              className={`pl-8 pr-2.5 py-1 rounded-full text-[11px] sm:text-xs transition-all w-20 xs:w-28 sm:w-44 md:w-56 lg:w-64 border outline-none font-sans cursor-pointer focus:ring-1 focus:ring-[#c2a46c] focus:border-[#c2a46c] ${
                 isDarkHeroOverlay
                   ? 'bg-white/15 text-white placeholder-stone-300 border-white/20'
                   : 'bg-stone-100 text-stone-900 placeholder-stone-500 border-stone-200'
               }`}
             />
             <button
-              onClick={() => {
-                if (activeView !== 'home') {
-                  setActiveView('home');
-                }
+              onClick={(e) => {
+                e.stopPropagation();
+                openSearch();
               }}
               className="absolute left-2.5 p-0.5 focus:outline-none focus:ring-1 focus:ring-[#c2a46c] rounded-full transition-colors cursor-pointer"
               title="Search clothes"

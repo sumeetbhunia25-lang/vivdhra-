@@ -25,6 +25,7 @@ export default function AdminPanel({
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [crudError, setCrudError] = useState('');
   const [crudSuccess, setCrudSuccess] = useState('');
+  const [showManual, setShowManual] = useState(true); // default open so it's easily noticed by the user!
 
   // AI upload & scanning states
   const [isScanning, setIsScanning] = useState(false);
@@ -372,7 +373,111 @@ export default function AdminPanel({
 
       {/* TAB 2: GARMENT CRUD MANAGEMENT */}
       {activeTab === 'products' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-fade-in">
+        <div className="space-y-8 animate-fade-in w-full">
+          
+          {/* Collapsible Atelier AI Catalog Expansion Manual */}
+          <div className="bg-gradient-to-br from-stone-50 to-[#fafaf9] border border-[#e7e5e4] rounded-2xl overflow-hidden shadow-2xs">
+            <div 
+              onClick={() => setShowManual(!showManual)}
+              className="flex items-center justify-between p-5 cursor-pointer bg-[#f5f5f4]/50 hover:bg-[#f5f5f4] transition-colors select-none border-b border-[#e7e5e4]/30"
+              id="ai-manual-header"
+            >
+              <div className="flex items-center space-x-2.5">
+                <div className="p-1.5 bg-[#c2a46c]/10 text-[#c2a46c] rounded-full">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="serif-header text-sm font-bold text-[#1c1917]">
+                    Atelier AI Catalog Expansion Manual
+                  </h3>
+                  <p className="text-[10px] font-mono uppercase text-[#78716c]">
+                    Instruction Guide for Long-Term Catalog Management & GitHub Syncing
+                  </p>
+                </div>
+              </div>
+              <button 
+                className="text-xs font-outfit text-[#c2a46c] hover:underline font-bold flex items-center gap-1"
+                id="toggle-manual-btn"
+              >
+                {showManual ? 'Collapse Guide' : 'Expand Guide'}
+              </button>
+            </div>
+
+            {showManual && (
+              <div className="p-5 md:p-6 space-y-6 text-xs text-stone-700 leading-relaxed border-t border-[#e7e5e4]/50" id="ai-manual-body">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  
+                  {/* Step 1 */}
+                  <div className="space-y-2 bg-white p-4 rounded-xl border border-stone-200">
+                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
+                      Step 1: Upload & Analyze
+                    </span>
+                    <p className="text-[#1c1917] font-semibold font-outfit text-xs">AI-Powered Garment Scanning</p>
+                    <p className="text-[11px] text-stone-500">
+                      Drag & drop or click the <strong>AI Scan Product Image</strong> block to upload any garment picture. The server-side Gemini 3.5 Flash engine extracts elegant luxury titles, materials, cares, colors, drapes, and tags.
+                    </p>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="space-y-2 bg-white p-4 rounded-xl border border-stone-200">
+                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-[#0f766e] bg-[#0f766e]/5 px-2 py-0.5 rounded">
+                      Step 2: Review & Refine
+                    </span>
+                    <p className="text-[#1c1917] font-semibold font-outfit text-xs">Verify Autocompleted Fields</p>
+                    <p className="text-[11px] text-stone-500">
+                      Review the parsed garment metadata. Refine titles, assign prices, tweak the categorization (Dresses, Tops, Co-ords, Bottoms, Blazers), edit drapes, or supplement with customized tag values.
+                    </p>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="space-y-2 bg-white p-4 rounded-xl border border-stone-200">
+                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                      Step 3: Go Live Instantly
+                    </span>
+                    <p className="text-[#1c1917] font-semibold font-outfit text-xs">Write to Active Store Database</p>
+                    <p className="text-[11px] text-stone-500">
+                      Click <strong>Publish Garment Design</strong>. This appends the new garment directly to the server database file at <code>data/vividhra_db.json</code>. The item instantly pops up on the collections page!
+                    </p>
+                  </div>
+
+                  {/* Step 4 */}
+                  <div className="space-y-2 bg-white p-4 rounded-xl border border-stone-200">
+                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
+                      Step 4: Push to GitHub
+                    </span>
+                    <p className="text-[#1c1917] font-semibold font-outfit text-xs">Permanent Version Control</p>
+                    <p className="text-[11px] text-stone-500">
+                      To preserve newly added garments across all devices, platforms, and production hosts, push your database and media files to your GitHub repository using the command guide below.
+                    </p>
+                  </div>
+
+                </div>
+
+                {/* Git Push Code Block Instructions */}
+                <div className="bg-stone-900 text-stone-300 p-4 rounded-xl font-mono text-[11px] space-y-2 border border-stone-800 shadow-inner">
+                  <p className="text-[#c2a46c] font-bold flex items-center gap-1.5 border-b border-stone-800 pb-2">
+                    <span>💻 Long-Term GitHub Catalog Synchronization Instructions:</span>
+                  </p>
+                  <p className="text-stone-400">Run these commands in your local directory to save the new products to your repository:</p>
+                  <pre className="text-emerald-400 bg-stone-950 p-2.5 rounded border border-stone-800 overflow-x-auto whitespace-pre font-mono">
+{`# 1. Stage the product database changes and newly uploaded images
+git add data/vividhra_db.json uploads/
+
+# 2. Commit the new designs to your local Git history
+git commit -m "style: expand VIVIDHRA catalog with new AI-parsed garments"
+
+# 3. Push securely to your live GitHub repository
+git push origin main`}
+                  </pre>
+                  <p className="text-[10px] text-stone-500 italic mt-1.5">
+                    💡 Note: Both the database (<code>data/vividhra_db.json</code>) and uploaded images (<code>uploads/</code>) will be tracked, ensuring the storefront catalog is always perfectly up-to-date and consistent on all platforms.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Form panel: Add/Edit */}
           <div className="lg:col-span-5 bg-white border border-[#e7e5e4] p-5 md:p-6 rounded-2xl shadow-xs">
@@ -690,6 +795,7 @@ export default function AdminPanel({
             </div>
           </div>
 
+          </div>
         </div>
       )}
 

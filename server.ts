@@ -1554,6 +1554,11 @@ app.get('/api/admin/download-db', (req, res) => {
 
 // ---------------------- FRONTEND / STATIC SETUP ----------------------
 
+// Start listening immediately to avoid any startup connection delays or 502 errors from reverse proxies
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Vividhra server running on port ${PORT} (${process.env.NODE_ENV || 'development'} mode)`);
+});
+
 if (process.env.NODE_ENV !== 'production') {
   createViteServer({
     server: { middlewareMode: true },
@@ -1565,19 +1570,12 @@ if (process.env.NODE_ENV !== 'production') {
     app.get('*', (req, res) => {
       res.sendFile(path.join(process.cwd(), 'index.html'));
     });
-    
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Vividhra server running on http://localhost:${PORT}`);
-    });
+    console.log('Vite dev middleware loaded successfully.');
   });
 } else {
   const distPath = path.join(process.cwd(), 'dist');
   app.use(express.static(distPath));
   app.get('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
-  });
-  
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Vividhra production server running on port ${PORT}`);
   });
 }

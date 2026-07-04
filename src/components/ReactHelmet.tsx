@@ -6,9 +6,10 @@ interface ReactHelmetProps {
   selectedProduct: Product | null;
   selectedCategory: string;
   products?: Product[];
+  searchQuery?: string;
 }
 
-export function ReactHelmet({ activeView, selectedProduct, selectedCategory, products }: ReactHelmetProps) {
+export function ReactHelmet({ activeView, selectedProduct, selectedCategory, products, searchQuery }: ReactHelmetProps) {
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://vividhra.com';
 
   // Base default settings
@@ -40,6 +41,10 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
   } else if (activeView === 'tracking') {
     title = 'Order Journey Portal | VIVIDHRA';
     description = '📦 Track the hand-tailored manufacturing and eco-express transit coordinates of your bespoke VIVIDHRA order in real-time.';
+  } else if (activeView === 'shop' && searchQuery) {
+    title = `Garments matching "${searchQuery}" | VIVIDHRA`;
+    description = `🛍️ Explore the finest selection of garments matching "${searchQuery}" at VIVIDHRA. Hand-tailored with premium linen, pure silk, and organic cotton.`;
+    ogImage = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1200&h=630';
   } else if (activeView === 'shop' && selectedCategory === 'all') {
     title = 'Collections Hub | Curated Premium Silhouettes | VIVIDHRA';
     description = '🏺 Discover VIVIDHRA\'s curated Collections Hub. Explore hand-tailored luxury garments arranged by styles: Dresses, Tops, Co-ords, Bottoms, and sustainable drops.';
@@ -72,6 +77,8 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
   let canonicalUrl = origin;
   if (selectedProduct) {
     canonicalUrl = `${origin}/?product=${selectedProduct.id}`;
+  } else if (activeView === 'shop' && searchQuery) {
+    canonicalUrl = `${origin}/?search=${encodeURIComponent(searchQuery)}`;
   } else if (activeView === 'shop' && selectedCategory) {
     canonicalUrl = selectedCategory === 'all' ? `${origin}/?view=shop` : `${origin}/?category=${selectedCategory}`;
   } else if (activeView !== 'home') {
@@ -148,6 +155,41 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
           "availability": selectedProduct.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
           "seller": {
             "@id": `${origin}/#organization`
+          },
+          "hasMerchantReturnPolicy": {
+            "@type": "MerchantReturnPolicy",
+            "applicableCountry": "IN",
+            "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnPeriod",
+            "merchantReturnDays": 15,
+            "returnMethod": "https://schema.org/ReturnByMail",
+            "returnFees": "https://schema.org/FreeReturn"
+          },
+          "shippingDetails": {
+            "@type": "OfferShippingDetails",
+            "shippingRate": {
+              "@type": "MonetaryAmount",
+              "value": 0,
+              "currency": "INR"
+            },
+            "shippingDestination": {
+              "@type": "DefinedRegion",
+              "addressCountry": "IN"
+            },
+            "deliveryTime": {
+              "@type": "ShippingDeliveryTime",
+              "handlingTime": {
+                "@type": "QuantitativeValue",
+                "minValue": 1,
+                "maxValue": 2,
+                "unitCode": "DAY"
+              },
+              "transitTime": {
+                "@type": "QuantitativeValue",
+                "minValue": 2,
+                "maxValue": 5,
+                "unitCode": "DAY"
+              }
+            }
           }
         },
         "review": {
@@ -370,7 +412,7 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
       "@context": "https://schema.org",
       "@graph": baseGraph
     };
-  }, [selectedProduct, activeView, selectedCategory, products, canonicalUrl, description, origin, categoryLabel]);
+  }, [selectedProduct, activeView, selectedCategory, products, canonicalUrl, description, origin, categoryLabel, searchQuery]);
 
   // Double-secure fallback: Client-side Meta Dynamic Synchronization
   useEffect(() => {
@@ -422,7 +464,7 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
       }
       script.text = JSON.stringify(schemaData);
     }
-  }, [title, description, absoluteOgImage, selectedProduct, canonicalUrl, schemaData]);
+  }, [title, description, absoluteOgImage, selectedProduct, canonicalUrl, schemaData, searchQuery]);
 
   // React 19 / Vite natively hoists these elements to the document head automatically
   return (

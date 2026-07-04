@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Sliders, Check, RotateCcw, ChevronRight, ChevronLeft, Star, HelpCircle, ArrowRight } from 'lucide-react';
 import { Product, WishlistItem } from '../types';
 import VividhraStyleProductCard from './VividhraStyleProductCard';
+import Breadcrumb from './Breadcrumb';
+import { filterProducts } from '../lib/productFilters';
 
 interface CategoryListingPageProps {
   selectedCategory: string;
@@ -17,7 +19,10 @@ interface CategoryListingPageProps {
   wishlist: WishlistItem[];
   categoriesList: Array<{ id: string; label: string; image: string }>;
   onBack?: () => void;
-  setActiveView?: (view: 'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop' | 'tracking') => void;
+  setActiveView: (view: 'home' | 'story' | 'stylist' | 'profile' | 'admin' | 'shop' | 'tracking') => void;
+  navHistory: any[];
+  setNavHistory: React.Dispatch<React.SetStateAction<any[]>>;
+  isGoingBackRef: React.MutableRefObject<boolean>;
 }
 
 export default function CategoryListingPage({
@@ -34,6 +39,9 @@ export default function CategoryListingPage({
   categoriesList,
   onBack,
   setActiveView,
+  navHistory,
+  setNavHistory,
+  isGoingBackRef,
 }: CategoryListingPageProps) {
   // Local Filter States
   const [selectedMaterial, setSelectedMaterial] = useState<string>('all');
@@ -61,70 +69,26 @@ export default function CategoryListingPage({
   ];
 
   const activeCategoryLabel = useMemo(() => {
+    if (searchQuery) {
+      return `Search results for "${searchQuery}"`;
+    }
     return categoriesList.find((c) => c.id === selectedCategory)?.label || 'Our Collection';
-  }, [selectedCategory, categoriesList]);
+  }, [selectedCategory, categoriesList, searchQuery]);
 
   // Dynamically filter products using the unified app category filter rules first, then the custom materials & price constraints
   const finalFilteredProducts = useMemo(() => {
-    return products
+    // 1. Get products matching category and search query using the unified filter logic
+    const coreFiltered = filterProducts(products, selectedCategory, searchQuery);
+
+    return coreFiltered
       .filter((p) => {
-        // 1. Core category match (mirroring the main App filtering block for absolute integrity)
-        let matchCategory = false;
-        if (selectedCategory === 'all') {
-          matchCategory = true;
-        } else if (selectedCategory === 'atelier-ai') {
-          matchCategory = ['p14', 'p15', 'p16', 'p17', 'p18', 'p19'].includes(p.id);
-        } else if (selectedCategory === 'new-arrivals') {
-          matchCategory = p.isTrending || p.id === 'p14' || p.id === 'p15';
-        } else if (selectedCategory === 'best-sellers') {
-          matchCategory = p.isTrending && p.price > 1600;
-        } else if (selectedCategory === 'dresses') {
-          matchCategory = p.category === 'dresses';
-        } else if (selectedCategory === 'tops') {
-          matchCategory = p.category === 'tops';
-        } else if (selectedCategory === 'co-ords') {
-          matchCategory = p.category === 'co-ords';
-        } else if (selectedCategory === 'bottoms') {
-          matchCategory = p.category === 'trousers';
-        } else if (selectedCategory === 'kurtis') {
-          matchCategory = p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('drape');
-        } else if (selectedCategory === 'ethnic-sets') {
-          matchCategory = p.name.toLowerCase().includes('set') || p.name.toLowerCase().includes('asymmetric');
-        } else if (selectedCategory === 'party-wear') {
-          matchCategory = p.name.toLowerCase().includes('corset') || p.name.toLowerCase().includes('satin') || p.name.toLowerCase().includes('wine') || p.category === 'blazers';
-        } else if (selectedCategory === 'office-wear') {
-          matchCategory = p.category === 'blazers' || p.category === 'trousers';
-        } else if (selectedCategory === 'daily-wear') {
-          matchCategory = p.category === 'tops' || p.category === 'co-ords';
-        } else if (selectedCategory === 'vacation-wear') {
-          matchCategory = p.category === 'vacation' || p.materials.toLowerCase().includes('linen');
-        } else if (selectedCategory === 'college-wear') {
-          matchCategory = p.price < 1800;
-        } else if (selectedCategory === 'house-wear') {
-          matchCategory = p.materials.toLowerCase().includes('cotton') && p.category === 'tops';
-        } else if (selectedCategory === 'minimal-collection') {
-          matchCategory = p.materials.toLowerCase().includes('linen') || p.category === 'blazers';
-        } else if (selectedCategory === 'sustainable-picks') {
-          matchCategory = p.materials.toLowerCase().includes('organic') || p.materials.toLowerCase().includes('gots') || p.materials.toLowerCase().includes('eco');
-        } else if (selectedCategory === 'sale') {
-          matchCategory = p.originalPrice > p.price;
-        } else {
-          matchCategory = p.category === selectedCategory;
-        }
-
-        // 2. Search Query Match
-        const matchSearch =
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.materials.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.description.toLowerCase().includes(searchQuery.toLowerCase());
-
-        // 3. Material Texture Match
+        // 2. Material Texture Match
         let matchMaterial = true;
         if (selectedMaterial !== 'all') {
           matchMaterial = p.materials.toLowerCase().includes(selectedMaterial) || p.description.toLowerCase().includes(selectedMaterial);
         }
 
-        // 4. Price Bracket Match
+        // 3. Price Bracket Match
         let matchPrice = true;
         if (selectedPriceRange === 'under-1500') {
           matchPrice = p.price < 1500;
@@ -134,7 +98,7 @@ export default function CategoryListingPage({
           matchPrice = p.price > 2500;
         }
 
-        return matchCategory && matchSearch && matchMaterial && matchPrice;
+        return matchMaterial && matchPrice;
       })
       .sort((a, b) => {
         // Amazon-style Sorting Options
@@ -171,21 +135,21 @@ export default function CategoryListingPage({
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           
           {/* Breadcrumb representing the collections hub */}
-          <div className="flex items-center space-x-2 text-xs text-stone-500 font-outfit mb-6">
-            <button 
-              onClick={() => {
-                if (setActiveView) {
-                  setActiveView('home');
-                }
-              }} 
-              className="hover:text-[#1c1917] hover:underline cursor-pointer bg-transparent border-none p-0"
-            >
-              Home
-            </button>
-            <ChevronRight className="w-3 h-3 text-stone-400" />
-            <span className="text-stone-900 font-medium tracking-wide uppercase text-[10px] bg-stone-100 px-2 py-0.5 rounded-sm">
-              Collections Hub
-            </span>
+          <div className="mb-6">
+            <Breadcrumb
+              activeView="shop"
+              selectedCategory="all"
+              selectedProduct={null}
+              searchQuery={searchQuery}
+              navHistory={navHistory}
+              setNavHistory={setNavHistory}
+              setActiveView={setActiveView}
+              setSelectedCategory={setSelectedCategory}
+              setSelectedProduct={setSelectedProduct}
+              setSearchQuery={setSearchQuery}
+              isGoingBackRef={isGoingBackRef}
+              categoriesList={categoriesList}
+            />
           </div>
 
           {/* Section Header */}
@@ -267,28 +231,21 @@ export default function CategoryListingPage({
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         
         {/* 1. Category Breadcrumbs */}
-        <div className="flex items-center space-x-2 text-xs text-stone-500 font-outfit mb-3">
-          <button 
-            onClick={() => {
-              if (setActiveView) {
-                setActiveView('home');
-              }
-            }} 
-            className="hover:text-[#1c1917] hover:underline cursor-pointer bg-transparent border-none p-0"
-          >
-            Home
-          </button>
-          <ChevronRight className="w-3 h-3 text-stone-400" />
-          <button 
-            onClick={() => setSelectedCategory('all')} 
-            className="text-stone-500 hover:text-[#1c1917] hover:underline cursor-pointer p-0 bg-transparent border-none"
-          >
-            Collections
-          </button>
-          <ChevronRight className="w-3 h-3 text-stone-400" />
-          <span className="text-stone-900 font-medium tracking-wide uppercase text-[10px] bg-stone-100 px-2 py-0.5 rounded-sm">
-            {activeCategoryLabel}
-          </span>
+        <div className="mb-3">
+          <Breadcrumb
+            activeView="shop"
+            selectedCategory={selectedCategory}
+            selectedProduct={null}
+            searchQuery={searchQuery}
+            navHistory={navHistory}
+            setNavHistory={setNavHistory}
+            setActiveView={setActiveView}
+            setSelectedCategory={setSelectedCategory}
+            setSelectedProduct={setSelectedProduct}
+            setSearchQuery={setSearchQuery}
+            isGoingBackRef={isGoingBackRef}
+            categoriesList={categoriesList}
+          />
         </div>
 
         {selectedCategory !== 'all' && (
