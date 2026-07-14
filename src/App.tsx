@@ -120,6 +120,78 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
+  // Initialize and synchronize in-memory React state with URL search query params for deep-linking & SEO
+  const urlInitRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (urlInitRef.current && products.length > 0) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const urlProduct = params.get('product');
+    const urlCategory = params.get('category');
+    const urlSearch = params.get('search');
+    const urlView = params.get('view');
+
+    if (products && products.length > 0) {
+      urlInitRef.current = true;
+      if (urlProduct) {
+        const found = products.find(p => p.id === urlProduct);
+        if (found) {
+          setSelectedProduct(found);
+          setActiveView('shop');
+          if (urlCategory) {
+            setSelectedCategory(urlCategory);
+          }
+          return;
+        }
+      }
+    }
+
+    if (!urlInitRef.current) {
+      if (urlView && ['home', 'story', 'stylist', 'profile', 'admin', 'shop', 'tracking'].includes(urlView)) {
+        setActiveView(urlView as any);
+        urlInitRef.current = true;
+      } else if (urlCategory) {
+        setSelectedCategory(urlCategory);
+        setActiveView('shop');
+        urlInitRef.current = true;
+      } else if (urlSearch) {
+        setSearchQuery(urlSearch);
+        setActiveView('shop');
+        urlInitRef.current = true;
+      }
+    }
+  }, [products]);
+
+  // Dynamically update the address bar parameters when user alters view, category, product, or search filter
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const params = new URLSearchParams();
+    if (selectedProduct) {
+      params.set('product', selectedProduct.id);
+      if (selectedCategory && selectedCategory !== 'all') {
+        params.set('category', selectedCategory);
+      }
+    } else if (activeView === 'shop') {
+      if (searchQuery) {
+        params.set('search', searchQuery);
+      } else if (selectedCategory && selectedCategory !== 'all') {
+        params.set('category', selectedCategory);
+      } else {
+        params.set('view', 'shop');
+      }
+    } else if (activeView !== 'home') {
+      params.set('view', activeView);
+    }
+
+    const newQuery = params.toString();
+    const newSearch = newQuery ? `?${newQuery}` : '';
+    if (window.location.search !== newSearch) {
+      window.history.replaceState(null, '', `${window.location.pathname}${newSearch}`);
+    }
+  }, [activeView, selectedCategory, selectedProduct, searchQuery]);
+
   // Drag-scroll state for popular category bubbles
   const bubbleScrollRef = useRef<HTMLDivElement>(null);
   const [isBubbleDragging, setIsBubbleDragging] = useState(false);
@@ -163,6 +235,15 @@ export default function App() {
     selectedProduct: null,
     searchQuery: '',
   });
+
+  // Full-stack e-commerce dynamic data cache
+  const productCacheRef = useRef<{
+    products: Product[];
+    charities: any[];
+    donationLogs: any[];
+    orders: any[];
+    timestamp: number;
+  } | null>(null);
 
   const getStateKey = (view: string, category: string, product: Product | null, search: string) => {
     if (product) return `product-${product.id}`;
@@ -233,10 +314,38 @@ export default function App() {
 
       // Restore scroll position for new state
       const savedScroll = scrollPositionsRef.current[currentKey] || 0;
-      setTimeout(() => {
-        window.scrollTo({ top: savedScroll, behavior: 'instant' as any });
-      }, 50);
+      const restoreScroll = () => {
+        if ((window as any).lenis) {
+          (window as any).lenis.scrollTo(savedScroll, { immediate: true });
+        } else {
+          window.scrollTo({ top: savedScroll, behavior: 'instant' as any });
+        }
+      };
+
+      // Call immediately, then schedule across animation frames and timeout ticks for guaranteed precision
+      restoreScroll();
+      const rafId = requestAnimationFrame(restoreScroll);
+      const t1 = setTimeout(restoreScroll, 50);
+      const t2 = setTimeout(restoreScroll, 150);
+      const t3 = setTimeout(restoreScroll, 350);
+
+      // Save scroll restoration cleanup routine
+      (window as any)._scrollRestoreCleanup = () => {
+        cancelAnimationFrame(rafId);
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
     }
+  }, [activeView, selectedCategory, selectedProduct, searchQuery]);
+
+  // Handle scroll restoration cleanup
+  useEffect(() => {
+    return () => {
+      if ((window as any)._scrollRestoreCleanup) {
+        (window as any)._scrollRestoreCleanup();
+      }
+    };
   }, [activeView, selectedCategory, selectedProduct, searchQuery]);
 
   // Initialize Lenis for buttery smooth scrolling across the entire application on all devices
@@ -251,6 +360,8 @@ export default function App() {
       touchMultiplier: 1.5,
     });
 
+    (window as any).lenis = lenis;
+
     let rafId: number;
     function raf(time: number) {
       lenis.raf(time);
@@ -260,6 +371,7 @@ export default function App() {
     rafId = requestAnimationFrame(raf);
 
     return () => {
+      (window as any).lenis = undefined;
       lenis.destroy();
       cancelAnimationFrame(rafId);
     };
@@ -414,8 +526,21 @@ export default function App() {
     };
   }, [products, selectedCategory, searchQuery]);
 
-  // Fetch full-stack database states with robust automatic retries
-  const loadData = async (retries = 5, delayMs = 1500) => {
+  // Fetch full-stack database states with robust automatic retries and client-side memory cache
+  const loadData = async (retries = 5, delayMs = 1500, forceFetch = false) => {
+    // If not a forced fetch, and we already have products and other state in memory, return instantly!
+    if (!forceFetch && products && products.length > 0 && charities && charities.length > 0 && orders && orders.length > 0) {
+      return;
+    }
+    // Return cached values immediately if fresh (within 5 minutes) and not a forced re-fetch
+    if (productCacheRef.current && !forceFetch && (Date.now() - productCacheRef.current.timestamp < 300000)) {
+      setProducts(productCacheRef.current.products);
+      setCharities(productCacheRef.current.charities);
+      setDonationLogs(productCacheRef.current.donationLogs);
+      setOrders(productCacheRef.current.orders);
+      return;
+    }
+
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         const fetchJSON = async (url: string) => {
@@ -441,6 +566,15 @@ export default function App() {
         setCharities(targetRes);
         setDonationLogs(logRes);
         setOrders(orderRes);
+
+        // Store fetched values in cache
+        productCacheRef.current = {
+          products: prodRes,
+          charities: targetRes,
+          donationLogs: logRes,
+          orders: orderRes,
+          timestamp: Date.now(),
+        };
 
         // Pre-select checkout charities
         if (targetRes.length > 0) {
@@ -733,7 +867,7 @@ export default function App() {
       body: JSON.stringify(product),
     });
     const data = await res.json();
-    await loadData();
+    await loadData(5, 1500, true);
     return data;
   };
 
@@ -742,7 +876,7 @@ export default function App() {
       method: 'DELETE',
     });
     const data = await res.json();
-    await loadData();
+    await loadData(5, 1500, true);
     return data;
   };
 
@@ -753,7 +887,7 @@ export default function App() {
       body: JSON.stringify({ id: orderId, status }),
     });
     const data = await res.json();
-    await loadData();
+    await loadData(5, 1500, true);
     return data;
   };
 
@@ -864,7 +998,7 @@ export default function App() {
       setGiftWrapping(false);
       setCheckoutPhone('');
       setCheckoutNotes('');
-      await loadData(); // Reload pools and counts
+      await loadData(5, 1500, true); // Reload pools and counts
     } catch (err) {
       console.error(err);
       alert('Failed to execute purchase. Check parameters.');
@@ -911,7 +1045,7 @@ export default function App() {
         activeView={activeView}
         setActiveView={(v) => {
           setActiveView(v);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          window.scrollTo({ top: 0, behavior: 'auto' });
         }}
         openCart={() => setIsCartOpen(true)}
         openWishlist={() => setIsWishlistOpen(true)}
@@ -947,10 +1081,10 @@ export default function App() {
           {selectedProduct && (
             <motion.div
               key={`product-detail-${selectedProduct.id}`}
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.4 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
             >
               <ProductDetailPage
                 product={selectedProduct}
@@ -1007,10 +1141,10 @@ export default function App() {
           {!selectedProduct && activeView === 'shop' && (
             <motion.div
               key="shop"
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.4 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
             >
               <CategoryListingPage
                 selectedCategory={selectedCategory}
@@ -1037,10 +1171,10 @@ export default function App() {
           {!selectedProduct && activeView === 'home' && (
             <motion.div
               key="home"
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="space-y-10 pb-16"
             >
               
@@ -1129,10 +1263,10 @@ export default function App() {
           {activeView === 'story' && (
             <motion.div
               key="story"
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
             >
               <StoryPage />
             </motion.div>
@@ -1142,10 +1276,10 @@ export default function App() {
           {activeView === 'tracking' && (
             <motion.div
               key="tracking"
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
             >
               <OrderTrackingPage 
                 orders={orders}
@@ -1159,10 +1293,10 @@ export default function App() {
           {activeView === 'stylist' && (
             <motion.div
               key="stylist"
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="pt-24 md:pt-32 pb-20 max-w-5xl mx-auto px-4 md:px-8 space-y-12"
             >
               <div className="text-center max-w-2xl mx-auto space-y-3">
@@ -1190,10 +1324,10 @@ export default function App() {
           {activeView === 'profile' && (
             <motion.div
               key="profile"
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="pt-24 md:pt-32 pb-20 max-w-5xl mx-auto px-4 md:px-8 space-y-12"
             >
               <div className="text-center max-w-2xl mx-auto space-y-3">
@@ -1612,10 +1746,10 @@ export default function App() {
           {activeView === 'admin' && (
             <motion.div
               key="admin"
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
             >
               <AdminPanel
                 products={products}
@@ -2804,7 +2938,7 @@ export default function App() {
       {/* 9. Premium Brand Footer */}
       <Footer setActiveView={(v) => {
         setActiveView(v);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'auto' });
       }} />
 
       {/* 10. Floating Quick View Modal Overlay */}

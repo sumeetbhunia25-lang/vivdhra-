@@ -1172,11 +1172,111 @@ app.patch('/api/orders/:id', (req, res) => {
   }
 });
 
+app.put('/api/orders', (req, res) => {
+  const { id, status } = req.body;
+  const orderIdx = db.orders.findIndex(o => o.id === id);
+  if (orderIdx !== -1) {
+    db.orders[orderIdx].status = status;
+    saveDB();
+    res.json({ success: true, order: db.orders[orderIdx] });
+  } else {
+    res.status(404).json({ error: 'Order not found' });
+  }
+});
+
 // ---------------------- SERVER-SIDE AI WITH GEMINI ----------------------
 
-// Conversational Styling Advisor endpoint
+// Conversational Styling Advisor endpoint with robust exponential backoff retry and a beautiful, dynamic fashion stylist fallback to handle 503/500 transient errors.
 app.post('/api/gemini/styling', async (req, res) => {
   const { message, fitProfile, currentProduct, chatHistory } = req.body;
+
+  // A brand-personalized, context-aware fallback styling response matching Smita Sharma's mother's "Dress with purpose" Sanskrit-rooted versatility values.
+  const getDynamicFallbackResponse = (msg: string, profile: any, product: any): string => {
+    const lower = msg.toLowerCase();
+    
+    let greeting = "Hello, lovely! I'm your Lead Senior Fashion Stylist here at VIVIDHRA. ";
+    if (profile && profile.outfitMood) {
+      greeting += `I see your aesthetic vibe is curated for a **${profile.outfitMood}** look, which perfectly aligns with our signature style philosophy! `;
+    } else {
+      greeting += "I'm delighted to guide you today. Together, we'll design a wardrobe with purpose! ";
+    }
+
+    let bodyText = "";
+    let productContext = "";
+
+    if (product) {
+      productContext = `Regarding the exquisite **${product.name}** (crafted from premium *${product.materials || 'sustainable materials'}*): `;
+      
+      if (lower.includes('size') || lower.includes('fit') || lower.includes('measure') || lower.includes('small') || lower.includes('large') || lower.includes('medium')) {
+        let sizeRec = "M";
+        if (profile) {
+          if (profile.bodyType === 'petite' || profile.bodyType === 'lean') sizeRec = "XS or S";
+          else if (profile.bodyType === 'hourglass' || profile.bodyType === 'pear') sizeRec = "S or M";
+          else if (profile.bodyType === 'apple' || profile.bodyType === 'athletic') sizeRec = "M or L";
+          else if (profile.bodyType === 'plus-size') sizeRec = "XL";
+          
+          sizeRec = `Based on your **${profile.bodyType}** body type with ${profile.shoulderStructure || 'regular'} shoulder structure and preferred ${profile.waistFitPreference || 'comfortable'} waist preference, I highly recommend a size **${sizeRec}** for that perfectly tailored, editorial drape.`;
+        } else {
+          sizeRec = "Since this garment is engineered with a relaxed yet structured silhouette, we recommend ordering your true size. For a more tailored feel, you can select your standard bodice size.";
+        }
+        
+        bodyText = `${productContext}
+${sizeRec}
+
+Our VIVIDHRA fabrics, such as organic bamboo tencel and hand-loomed linen, feature subtle natural stretch and are designed to float beautifully over the silhouette.`;
+      } else if (lower.includes('style') || lower.includes('pair') || lower.includes('wear') || lower.includes('match') || lower.includes('coordinate') || lower.includes('look')) {
+        bodyText = `${productContext}
+To style this piece in line with our **"Dress with purpose"** ethos, I recommend a versatile, multi-scenario approach:
+- **Office Wear**: Pair this with our signature *Elysian Linen Blazer* and tapered silk trousers for an authoritative yet ultra-refined corporate presentation.
+- **Evening Party**: Dress it up by accessorizing with minimalist gold jewelry, structural block heels, and layering it over our flowing *Aura Silk Cowl Dress*.
+- **Home & College**: Achieve effortless comfort by pairing it with our breathable *Sanskrit Knit Co-ords* or high-waisted cotton trousers.`;
+      } else if (lower.includes('care') || lower.includes('wash') || lower.includes('material') || lower.includes('fabric')) {
+        bodyText = `${productContext}
+This masterpiece is made of **${product.materials || 'organic cotton and linen canvas'}**. Because we prioritize our planet, we use strictly sustainable, eco-conscious fibers.
+For care, we suggest:
+- Gentle hand wash cold or delicate cycle inside out.
+- Lay flat to dry in shade to protect the biological fibers.
+- Low-heat steam iron to maintain its pristine luxury finish.`;
+      } else {
+        bodyText = `${productContext}
+This is one of our most coveted versatile pieces, designed to transition effortlessly between the boardroom, high-profile evening soirees, or cozy weekend lounging.
+
+To complete the look, I highly recommend styling it with matching coordinates, such as a tailored linen trouser or our premium upcycled silk layering vests.`;
+      }
+    } else {
+      // No product selected
+      if (lower.includes('size') || lower.includes('fit') || lower.includes('guide')) {
+        let profileAdvice = "";
+        if (profile) {
+          profileAdvice = `With your registered **${profile.bodyType}** silhouette and preferences (preferring a **${profile.waistFitPreference || 'comfortable'}** waist fit), VIVIDHRA's structured wraps and draped tencel tops will highlight your shape elegantly while guaranteeing premium comfort.`;
+        } else {
+          profileAdvice = "We highly recommend setting up your VIVIDHRA 'Fit Profile' in our studio. It maps your unique shoulder, bust, and waist measurements to our luxury digital drape patterns.";
+        }
+        bodyText = `### Sizing & Fit Advisory
+${profileAdvice}
+
+Our standard sizing ranges from XS to XL, meticulously drafted on diverse real women's bodies to eliminate the rigid restrictions of traditional off-the-rack fashion.`;
+      } else if (lower.includes('hi') || lower.includes('hello') || lower.includes('greet') || lower.includes('who are you') || lower.includes('hey')) {
+        bodyText = `### Welcome to VIVIDHRA's AI Styling Suite
+
+I am your lead digital styling advisor. VIVIDHRA is deeply rooted in purposeful, sustainable fashion. Our collections are crafted using premium, eco-responsible fabrics designed to make you feel empowered, elegant, and comfortable.
+
+How can I elevate your style today? You can ask me about:
+- Tailored sizing advice based on your body shape.
+- Styling recommendations for specific occasions (Office, Parties, Leisure, or College).
+- Mix-and-match coordinates to build a perfect capsule wardrobe.`;
+      } else {
+        bodyText = `### Curated Styling Guidance
+For a sophisticated look, consider the elegant art of layering. VIVIDHRA's garments are made to be versatile:
+- Pair our structured blazer tops with flowing drapes to balance weight.
+- Opt for our butter yellow and wine crimson color palettes to add luxurious warmth to neutral tones.
+- Build your styling foundation with GOTS-certified organic cotton and sustainable tencel, ensuring your wardrobe is as kind to the earth as it is stunning on you.`;
+      }
+    }
+
+    const closing = `\n\n*VIVIDHRA Stylist Tip: Remember that true style is a form of self-expression. Wear every piece with confidence and purpose!*`;
+    return `${greeting}\n\n${bodyText}${closing}`;
+  };
 
   try {
     const profileText = fitProfile ? `
@@ -1206,6 +1306,9 @@ Current Product context:
 The brand slogan is "Dress with purpose", reflecting varied, manifold, and diverse creativity rooted in Sanskrit, honoring Smita Sharma's mother's journey in textile design.
 
 Your style is sophisticated, luxury-editorial, warm, professional, encouraging, and deeply fashion-conscious. 
+
+Greeting Behavior Directive:
+If the user's message is or contains a greeting (e.g. “hi”, “hello”, “hey”, “good morning”, “good evening”, “greetings”, or similar), you MUST start your response with a very warm, polite, and elegant welcome in VIVIDHRA's sophisticated brand voice (e.g., welcoming them to the Atelier, expressing delight to assist them, celebrating sustainable style). Afterward, gracefully guide them toward the next helpful action, such as product discovery, customized sizing advice based on their fit profile, exploring fabric care, or helping with order and shopping inquiries. Never give a cold or generic reply.
 
 In your response:
 1. Speak as a premium fashion consultant for women. Guide the user on styling, silhouettes, and sizing using the "VIVIDHRA Fit Profile" details if available.
@@ -1237,19 +1340,50 @@ Provide tailored styling guidance, outfit combinations, and custom size advice m
       parts: [{ text: currentPrompt }]
     });
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: contents,
-      config: {
-        systemInstruction: systemPrompt,
-        temperature: 0.75,
-      }
-    });
+    let apiResponseText = '';
+    let success = false;
+    let attempts = 3;
 
-    res.json({ response: response.text });
+    // Call Gemini with robust retry strategy (for transient high demand / 503 errors)
+    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MOCK_API_KEY') {
+      for (let attempt = 1; attempt <= attempts; attempt++) {
+        try {
+          const response = await ai.models.generateContent({
+            model: 'gemini-3.5-flash',
+            contents: contents,
+            config: {
+              systemInstruction: systemPrompt,
+              temperature: 0.75,
+            }
+          });
+          if (response?.text) {
+            apiResponseText = response.text;
+            success = true;
+            break;
+          }
+        } catch (apiErr: any) {
+          console.warn(`Gemini API styling attempt ${attempt} failed:`, apiErr.message || apiErr);
+          if (attempt < attempts) {
+            // Exponential backoff delay
+            await new Promise(resolve => setTimeout(resolve, attempt * 1200));
+          }
+        }
+      }
+    }
+
+    if (success && apiResponseText) {
+      res.json({ response: apiResponseText });
+    } else {
+      // Graceful local dynamic styling fallback if API fails or key is missing, ensuring zero errors or service downtime for clients.
+      console.log('Gemini styling API offline or key missing. Returning customized dynamic editorial stylist fallback.');
+      const fallbackText = getDynamicFallbackResponse(message, fitProfile, currentProduct);
+      res.json({ response: fallbackText });
+    }
   } catch (error: any) {
-    console.error('Gemini API styling error:', error);
-    res.status(500).json({ error: 'Styling assistant encountered an issue. Please try again soon!' });
+    console.error('Gemini API styling route level error:', error);
+    // Even if route crashes, never crash client app: fallback to editorial response.
+    const fallbackText = getDynamicFallbackResponse(message, fitProfile, currentProduct);
+    res.json({ response: fallbackText });
   }
 });
 

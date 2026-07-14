@@ -20,6 +20,79 @@ export default function AdminPanel({
   onUpdateOrderStatus,
 }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'insights'>('insights');
+
+  // Handle CSV Export for Order History
+  const handleExportCSV = () => {
+    if (!orders || orders.length === 0) {
+      alert("No purchase registers available to export.");
+      return;
+    }
+
+    const headers = [
+      'Order ID',
+      'Customer Name',
+      'Customer Email',
+      'Phone',
+      'Product Names',
+      'Quantities',
+      'Prices',
+      'Payment Status',
+      'Order Status',
+      'Total Amount',
+      'Shipping Address',
+      'Created Date',
+      'Updated Date'
+    ];
+
+    const escapeCSV = (val: any) => {
+      if (val === null || val === undefined) return '';
+      const str = String(val);
+      const escaped = str.replace(/"/g, '""');
+      if (escaped.includes(',') || escaped.includes('\n') || escaped.includes('"') || escaped.includes('\r')) {
+        return `"${escaped}"`;
+      }
+      return escaped;
+    };
+
+    const rows = orders.map(order => {
+      const productNames = order.items.map(item => item.productName).join('; ');
+      const quantities = order.items.map(item => item.quantity).join('; ');
+      const prices = order.items.map(item => item.price).join('; ');
+      const shippingAddress = `${order.address}, ${order.city}`;
+      const paymentStatus = order.paymentMethod?.toLowerCase() === 'cod' ? 'Cash On Delivery' : 'Paid (UPI)';
+
+      return [
+        order.id,
+        order.customerName,
+        order.customerEmail,
+        order.phone || 'N/A',
+        productNames,
+        quantities,
+        prices,
+        paymentStatus,
+        order.status,
+        order.total,
+        shippingAddress,
+        order.createdAt,
+        order.createdAt
+      ].map(escapeCSV);
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Vividhra_Orders_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   
   // Product CRUD states
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
@@ -802,9 +875,24 @@ git push origin main`}
       {/* TAB 3: ORDER TRACKING & STATUS UPDATES */}
       {activeTab === 'orders' && (
         <div className="bg-white border border-[#e7e5e4] p-5 md:p-6 rounded-2xl shadow-xs animate-fade-in">
-          <h3 className="serif-header text-base md:text-lg font-bold text-[#1c1917] mb-6">
-            Patron Purchase Registers
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-[#f5f5f4] pb-4">
+            <div>
+              <h3 className="serif-header text-base md:text-lg font-bold text-[#1c1917]">
+                Patron Purchase Registers
+              </h3>
+              <p className="text-xs text-[#78716c] mt-1 font-outfit">
+                Manage and export current order records for the boutique.
+              </p>
+            </div>
+            <button
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-[#1c1917] hover:bg-[#2e2a27] rounded-xl transition-all shadow-xs cursor-pointer select-none border border-transparent"
+              title="Download CSV Report of Order History"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export CSV Register</span>
+            </button>
+          </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">

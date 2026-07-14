@@ -76,11 +76,8 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
   // 1. Calculate Canonical URL dynamically (works on all devices and local hostnames)
   let canonicalUrl = origin;
   if (selectedProduct) {
-    if (selectedCategory && selectedCategory !== 'all') {
-      canonicalUrl = `${origin}/?category=${selectedCategory}&product=${selectedProduct.id}`;
-    } else {
-      canonicalUrl = `${origin}/?product=${selectedProduct.id}`;
-    }
+    // Elegant e-commerce canonical strategy: Always resolve to the clean, singular product page to avoid duplicate URL indexation.
+    canonicalUrl = `${origin}/?product=${selectedProduct.id}`;
   } else if (activeView === 'shop' && searchQuery) {
     canonicalUrl = `${origin}/?search=${encodeURIComponent(searchQuery)}`;
   } else if (activeView === 'shop' && selectedCategory) {
@@ -94,7 +91,32 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
     ? selectedCategory.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
     : 'Collections Hub';
 
-  // 3. Compute Schema.org JSON-LD dynamic metadata with an elite semantic graph structure
+  // 3. Robust recursive generator for cleaning and sanitizing JSON-LD schema metadata to ensure full compliance with Google Search Console Rich Snippets
+  const cleanSchemaValue = (val: any): any => {
+    if (val === null || val === undefined) return undefined;
+    if (Array.isArray(val)) {
+      const cleaned = val.map(cleanSchemaValue).filter(v => v !== undefined);
+      return cleaned.length > 0 ? cleaned : undefined;
+    }
+    if (typeof val === 'object' && val !== null) {
+      if (val instanceof Date) return val.toISOString();
+      const obj: Record<string, any> = {};
+      for (const key of Object.keys(val)) {
+        const cleaned = cleanSchemaValue(val[key]);
+        if (cleaned !== undefined) {
+          obj[key] = cleaned;
+        }
+      }
+      return Object.keys(obj).length > 0 ? obj : undefined;
+    }
+    if (typeof val === 'string') {
+      // Clean up whitespace, strip any tags or script injections for indexers
+      return val.replace(/<[^>]*>/g, '').trim();
+    }
+    return val;
+  };
+
+  // 4. Compute Schema.org JSON-LD dynamic metadata with an elite semantic graph structure
   const schemaData = useMemo(() => {
     // Shared elements of the Graph
     const baseGraph = [
@@ -254,10 +276,10 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
         ]
       };
 
-      return {
+      return cleanSchemaValue({
         "@context": "https://schema.org",
         "@graph": [...baseGraph, productSchema, breadcrumbSchema]
-      };
+      });
     }
 
     if (activeView === 'shop' && selectedCategory) {
@@ -350,10 +372,10 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
         ]
       };
 
-      return {
+      return cleanSchemaValue({
         "@context": "https://schema.org",
         "@graph": [...baseGraph, collectionSchema, breadcrumbSchema]
-      };
+      });
     }
 
     if (activeView === 'story') {
@@ -384,10 +406,10 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
         ]
       };
 
-      return {
+      return cleanSchemaValue({
         "@context": "https://schema.org",
         "@graph": [...baseGraph, aboutSchema, breadcrumbSchema]
-      };
+      });
     }
 
     if (activeView === 'stylist') {
@@ -418,17 +440,17 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
         ]
       };
 
-      return {
+      return cleanSchemaValue({
         "@context": "https://schema.org",
         "@graph": [...baseGraph, stylistSchema, breadcrumbSchema]
-      };
+      });
     }
 
     // Default Home WebSite graph
-    return {
+    return cleanSchemaValue({
       "@context": "https://schema.org",
       "@graph": baseGraph
-    };
+    });
   }, [selectedProduct, activeView, selectedCategory, products, canonicalUrl, description, origin, categoryLabel, searchQuery]);
 
   // Double-secure fallback: Client-side Meta Dynamic Synchronization

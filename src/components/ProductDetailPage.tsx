@@ -51,10 +51,11 @@ export default function ProductDetailPage({
   const [selectedOccasion, setSelectedOccasion] = useState<'office' | 'party' | 'home' | 'college'>('office');
   const [isAddedToast, setIsAddedToast] = useState(false);
 
-  // Hover to zoom effect states for detailed inspection of luxury fabrics
+  // Hover to zoom effect states for detailed inspection of luxury fabrics (buttery smooth Amazon-style zoom)
   const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({
     transformOrigin: 'center center',
-    transform: 'scale(1)'
+    transform: 'scale(1)',
+    transition: 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform-origin 0.25s cubic-bezier(0.25, 1, 0.5, 1)'
   });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -63,14 +64,37 @@ export default function ProductDetailPage({
     const y = ((e.clientY - top) / height) * 100;
     setZoomStyle({
       transformOrigin: `${x}% ${y}%`,
-      transform: 'scale(2.2)'
+      transform: 'scale(1.4)', // Smooth, consistent marketplace-style scale factor
+      transition: 'transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), transform-origin 0.15s cubic-bezier(0.25, 1, 0.5, 1)'
     });
   };
 
   const handleMouseLeave = () => {
     setZoomStyle({
       transformOrigin: 'center center',
-      transform: 'scale(1)'
+      transform: 'scale(1)',
+      transition: 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform-origin 0.25s cubic-bezier(0.25, 1, 0.5, 1)'
+    });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((touch.clientX - left) / width) * 100;
+    const y = ((touch.clientY - top) / height) * 100;
+    setZoomStyle({
+      transformOrigin: `${x}% ${y}%`,
+      transform: 'scale(1.4)',
+      transition: 'transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), transform-origin 0.15s cubic-bezier(0.25, 1, 0.5, 1)'
+    });
+  };
+
+  const handleTouchEnd = () => {
+    setZoomStyle({
+      transformOrigin: 'center center',
+      transform: 'scale(1)',
+      transition: 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform-origin 0.25s cubic-bezier(0.25, 1, 0.5, 1)'
     });
   };
 
@@ -208,6 +232,8 @@ export default function ProductDetailPage({
               className="aspect-[3/4] bg-stone-50 rounded-2xl overflow-hidden border border-stone-200/80 relative cursor-zoom-in select-none"
               onMouseMove={handleMouseMove}
               onMouseLeave={handleMouseLeave}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
               <img
                 src={activeImage}
