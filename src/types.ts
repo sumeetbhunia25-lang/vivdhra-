@@ -15,6 +15,8 @@ export interface Product {
   stock?: number;
   fitType: 'slim' | 'regular' | 'oversized';
   isTrending?: boolean;
+  subcategory?: string;
+  tags?: string[];
 }
 
 export interface FitProfile {
@@ -42,11 +44,16 @@ export interface CartItem {
   size: 'XS' | 'S' | 'M' | 'L' | 'XL';
   color: string;
   quantity: number;
+  product?: Product; // Full product detail reference
+  selectedColor?: string;
+  selectedSize?: string;
 }
 
 export interface WishlistItem {
-  productId: string;
-  addedAt: string;
+  id: string;
+  product: Product;
+  productId?: string;
+  addedAt?: string;
 }
 
 export interface DonationTarget {
@@ -90,8 +97,10 @@ export interface Order {
 
 export interface UserAccount {
   uid: string;
+  id?: string;
   email: string;
   displayName: string;
+  name?: string;
   role: 'customer' | 'admin';
   fitProfile?: FitProfile;
   wishlist: WishlistItem[];

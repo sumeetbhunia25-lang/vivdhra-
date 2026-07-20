@@ -54,6 +54,7 @@ import { ReactHelmet } from './components/ReactHelmet';
 import CategoryListingPage from './components/CategoryListingPage';
 import ProductDetailPage from './components/ProductDetailPage';
 import QuickViewModal from './components/QuickViewModal';
+import ErrorBoundary from './components/ErrorBoundary';
 import { addItemToCart, updateCartQuantity } from './lib/cartUtils';
 import { filterProducts } from './lib/productFilters';
 
@@ -78,9 +79,13 @@ export default function App() {
   const [profileSubTab, setProfileSubTab] = useState<'ai-silhouette' | 'profile-form' | 'order-tracking' | 'order-history'>('ai-silhouette');
   const [user, setUser] = useState<UserAccount | null>({
     id: 'user_1',
+    uid: 'user_1',
     name: 'Ananya Iyer',
+    displayName: 'Ananya Iyer',
     email: 'ananya@vividhra.com',
     role: 'admin', // Full multi-role support. Users can change this in the UI!
+    wishlist: [],
+    cart: [],
     fitProfile: {
       height: 164,
       bodyType: 'hourglass',
@@ -824,9 +829,9 @@ export default function App() {
 
   // Toggle wishlist
   const handleToggleWishlist = (productId: string) => {
-    const existingIndex = wishlist.findIndex((w) => w.product.id === productId);
+    const existingIndex = wishlist.findIndex((w) => w.product?.id === productId);
     if (existingIndex > -1) {
-      setWishlist(wishlist.filter((w) => w.product.id !== productId));
+      setWishlist(wishlist.filter((w) => w.product?.id !== productId));
     } else {
       const prod = products.find((p) => p.id === productId);
       if (prod) {
@@ -892,7 +897,7 @@ export default function App() {
   };
 
   // Calculations for Checkout
-  const cartSubtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const cartSubtotal = cart.reduce((sum, item) => sum + (item.product?.price ?? item.price ?? 0) * item.quantity, 0);
   
   // Promo code validation and discount calculation
   const promoDiscount = appliedPromo ? Math.round(cartSubtotal * (appliedPromo.discountPercent / 100)) : 0;
@@ -1075,7 +1080,8 @@ export default function App() {
 
       {/* 2. Main Visual Canvas Views */}
       <main className="min-h-screen">
-        <AnimatePresence mode="wait">
+        <ErrorBoundary>
+          <AnimatePresence mode="wait">
 
           {/* DEDICATED PRODUCT DETAIL VIEW */}
           {selectedProduct && (
@@ -1093,27 +1099,47 @@ export default function App() {
                   const qtyToAdd = qty || 1;
                   setCart((prev) => {
                     const existingIndex = prev.findIndex(
-                      (item) => item.product.id === p.id && item.size === size && item.color === color
+                      (item) => item.product?.id === p.id && item.size === size && item.color === color
                     );
                     if (existingIndex > -1) {
                       const updated = [...prev];
                       updated[existingIndex].quantity += qtyToAdd;
                       return updated;
                     }
-                    return [...prev, { product: p, quantity: qtyToAdd, size, color }];
+                    return [...prev, { 
+                      id: Math.random().toString(),
+                      productId: p.id,
+                      productName: p.name,
+                      price: p.price,
+                      image: p.images[0] || '',
+                      product: p, 
+                      quantity: qtyToAdd, 
+                      size, 
+                      color 
+                    }];
                   });
                 }}
                 onBuyNow={(p, size, color, qty) => {
                   const qtyToAdd = qty || 1;
                   setCart((prev) => {
                     const existingIndex = prev.findIndex(
-                      (item) => item.product.id === p.id && item.size === size && item.color === color
+                      (item) => item.product?.id === p.id && item.size === size && item.color === color
                     );
                     let updated = [...prev];
                     if (existingIndex > -1) {
                       updated[existingIndex].quantity += qtyToAdd;
                     } else {
-                      updated = [...prev, { product: p, quantity: qtyToAdd, size, color }];
+                      updated = [...prev, { 
+                        id: Math.random().toString(),
+                        productId: p.id,
+                        productName: p.name,
+                        price: p.price,
+                        image: p.images[0] || '',
+                        product: p, 
+                        quantity: qtyToAdd, 
+                        size, 
+                        color 
+                      }];
                     }
                     return updated;
                   });
@@ -1121,7 +1147,7 @@ export default function App() {
                   setIsCartOpen(true);
                 }}
                 onWishlistToggle={handleToggleWishlist}
-                isWishlisted={wishlist.some((w) => w.product.id === selectedProduct.id)}
+                isWishlisted={wishlist.some((w) => w.product?.id === selectedProduct.id)}
                 products={products}
                 setSelectedProduct={setSelectedProduct}
                 setIsAIStylistOpen={setIsAIStylistOpen}
@@ -1138,126 +1164,115 @@ export default function App() {
           )}
 
           {/* DEDICATED CATEGORY LISTING VIEW */}
-          {!selectedProduct && activeView === 'shop' && (
-            <motion.div
-              key="shop"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-            >
-              <CategoryListingPage
-                selectedCategory={selectedCategory}
-                setSelectedCategory={setSelectedCategory}
-                products={products}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                setSelectedProduct={setSelectedProduct}
-                onQuickView={(p) => setQuickViewProduct(p)}
-                handleAddToCart={handleAddToCart}
-                handleToggleWishlist={handleToggleWishlist}
-                wishlist={wishlist}
-                categoriesList={categoriesList}
-                onBack={handleBack}
-                setActiveView={setActiveView}
-                navHistory={navHistory}
-                setNavHistory={setNavHistory}
-                isGoingBackRef={isGoingBackRef}
-              />
-            </motion.div>
-          )}
+          <div 
+            key="shop-cached-view"
+            style={{ display: (!selectedProduct && activeView === 'shop') ? 'block' : 'none' }}
+            className="animate-fade-in"
+          >
+            <CategoryListingPage
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              products={products}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              setSelectedProduct={setSelectedProduct}
+              onQuickView={(p) => setQuickViewProduct(p)}
+              handleAddToCart={handleAddToCart}
+              handleToggleWishlist={handleToggleWishlist}
+              wishlist={wishlist}
+              categoriesList={categoriesList}
+              onBack={handleBack}
+              setActiveView={setActiveView}
+              navHistory={navHistory}
+              setNavHistory={setNavHistory}
+              isGoingBackRef={isGoingBackRef}
+            />
+          </div>
 
           {/* HOMEPAGE VIEW */}
-          {!selectedProduct && activeView === 'home' && (
-            <motion.div
-              key="home"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="space-y-10 pb-16"
-            >
-              
-              <PremiumHero 
-                onBrowse={() => {
-                  const listSec = document.getElementById('collection-grid');
-                  listSec?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                onExplorePhilosophy={() => setActiveView('story')}
-                selectedCategory={selectedCategory}
-                products={products}
-              />
+          <div 
+            key="home-cached-view"
+            style={{ display: (!selectedProduct && activeView === 'home') ? 'block' : 'none' }}
+            className="space-y-10 pb-16 animate-fade-in"
+          >
+            <PremiumHero 
+              onBrowse={() => {
+                const listSec = document.getElementById('collection-grid');
+                listSec?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              onExplorePhilosophy={() => setActiveView('story')}
+              selectedCategory={selectedCategory}
+              products={products}
+            />
 
-              {/* Products Catalog Grid */}
-              <section id="collection-grid" className="mx-4 md:mx-10 bg-white border border-gray-100 rounded-3xl p-6 md:p-10 shadow-xs scroll-mt-24">
-                <div className="mb-8 border-b border-[#e7e5e4] pb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-widest font-mono text-[#c2a46c] font-semibold">
-                      VIVIDHRA SELECTION
-                    </span>
-                    <h2 className="serif-header text-2xl md:text-4xl font-bold text-[#1c1917] mt-1.5">
-                      {categoriesList.find(c => c.id === selectedCategory)?.label || 'Our Collection'}
-                    </h2>
-                  </div>
-                  <span className="text-xs font-mono text-stone-500 bg-stone-100 px-3.5 py-1.5 rounded-full font-semibold self-start sm:self-auto">
-                    {filteredProducts.length} {filteredProducts.length === 1 ? 'Garment' : 'Garments'} Available
+            {/* Products Catalog Grid */}
+            <section id="collection-grid" className="mx-4 md:mx-10 bg-white border border-gray-100 rounded-3xl p-6 md:p-10 shadow-xs scroll-mt-24">
+              <div className="mb-8 border-b border-[#e7e5e4] pb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest font-mono text-[#c2a46c] font-semibold">
+                    VIVIDHRA SELECTION
                   </span>
+                  <h2 className="serif-header text-2xl md:text-4xl font-bold text-[#1c1917] mt-1.5">
+                    {categoriesList.find(c => c.id === selectedCategory)?.label || 'Our Collection'}
+                  </h2>
                 </div>
+                <span className="text-xs font-mono text-stone-500 bg-stone-100 px-3.5 py-1.5 rounded-full font-semibold self-start sm:self-auto">
+                  {filteredProducts.length} {filteredProducts.length === 1 ? 'Garment' : 'Garments'} Available
+                </span>
+              </div>
 
-                {/* Products Grid - Amazon Style fully visible vertical layout */}
-                {filteredProducts.length === 0 ? (
-                  <div className="text-center py-20 bg-white rounded-2xl border border-[#e7e5e4]">
-                    <p className="text-sm text-[#78716c] font-outfit">No garments found matching criteria.</p>
-                  </div>
-                ) : (
-                  <div 
-                    ref={productGridRef} 
-                    onKeyDown={handleGridKeyDown}
-                    className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 w-full"
+              {/* Products Grid - Amazon Style fully visible vertical layout */}
+              {filteredProducts.length === 0 ? (
+                <div className="text-center py-20 bg-white rounded-2xl border border-[#e7e5e4]">
+                  <p className="text-sm text-[#78716c] font-outfit">No garments found matching criteria.</p>
+                </div>
+              ) : (
+                <div 
+                  ref={productGridRef} 
+                  onKeyDown={handleGridKeyDown}
+                  className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 w-full"
+                >
+                  {filteredProducts.map((prod) => (
+                    <VividhraStyleProductCard
+                      key={prod.id}
+                      product={prod}
+                      onAddToCart={handleAddToCart}
+                      onWishlistToggle={handleToggleWishlist}
+                      isWishlisted={wishlist.some((w) => w.product?.id === prod.id)}
+                      onQuickView={(p) => setQuickViewProduct(p)}
+                      onSelectProduct={(p) => setSelectedProduct(p)}
+                      className="gsap-product-card opacity-0 h-full"
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Purpose & Slogan Showcase Column (Editorial Bento Box) */}
+            <section className="mx-4 md:mx-10 bg-[#F3F2EE] py-12 md:py-20 rounded-3xl border border-gray-200/40 shadow-xs">
+              <div className="max-w-4xl mx-auto px-4 text-center space-y-6">
+                <span className="text-[10px] uppercase tracking-[0.3em] font-mono text-[#c2a46c] font-semibold">
+                  MANDATORY BRAND CHARTER
+                </span>
+                <h3 className="serif-header text-2xl md:text-4xl font-light tracking-wide text-[#1c1917]">
+                  &ldquo;Dress with purpose&rdquo;
+                </h3>
+                <p className="text-xs md:text-sm text-[#57534e] leading-relaxed max-w-2xl mx-auto font-sans font-light">
+                  VIVIDHRA is not simply a label—it is an active communal movement. 
+                  Every pattern we execute, every sustainably crafted weave we tailor, and every transaction we register is tied directly 
+                  to funding shelters for animals, homes for the elderly, education for orphans, and tools for the disabled.
+                </p>
+                <div className="pt-2">
+                  <button
+                    onClick={() => setActiveView('stylist')}
+                    className="px-6 py-2.5 bg-[#1c1917] hover:bg-[#3c3734] text-white text-xs uppercase tracking-widest font-outfit font-medium rounded-lg transition-all cursor-pointer shadow-xs"
                   >
-                    {filteredProducts.map((prod) => (
-                      <VividhraStyleProductCard
-                        key={prod.id}
-                        product={prod}
-                        onAddToCart={handleAddToCart}
-                        onWishlistToggle={handleToggleWishlist}
-                        isWishlisted={wishlist.some((w) => w.product.id === prod.id)}
-                        onQuickView={(p) => setQuickViewProduct(p)}
-                        onSelectProduct={(p) => setSelectedProduct(p)}
-                        className="gsap-product-card opacity-0 h-full"
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              {/* Purpose & Slogan Showcase Column (Editorial Bento Box) */}
-              <section className="mx-4 md:mx-10 bg-[#F3F2EE] py-12 md:py-20 rounded-3xl border border-gray-200/40 shadow-xs">
-                <div className="max-w-4xl mx-auto px-4 text-center space-y-6">
-                  <span className="text-[10px] uppercase tracking-[0.3em] font-mono text-[#c2a46c] font-semibold">
-                    MANDATORY BRAND CHARTER
-                  </span>
-                  <h3 className="serif-header text-2xl md:text-4xl font-light tracking-wide text-[#1c1917]">
-                    &ldquo;Dress with purpose&rdquo;
-                  </h3>
-                  <p className="text-xs md:text-sm text-[#57534e] leading-relaxed max-w-2xl mx-auto font-sans font-light">
-                    VIVIDHRA is not simply a label—it is an active communal movement. 
-                    Every pattern we execute, every sustainably crafted weave we tailor, and every transaction we register is tied directly 
-                    to funding shelters for animals, homes for the elderly, education for orphans, and tools for the disabled.
-                  </p>
-                  <div className="pt-2">
-                    <button
-                      onClick={() => setActiveView('stylist')}
-                      className="px-6 py-2.5 bg-[#1c1917] hover:bg-[#3c3734] text-white text-xs uppercase tracking-widest font-outfit font-medium rounded-lg transition-all cursor-pointer shadow-xs"
-                    >
-                      Consult AI Styling Atelier
-                    </button>
-                  </div>
+                    Consult AI Styling Atelier
+                  </button>
                 </div>
-              </section>
-
-            </motion.div>
-          )}
+              </div>
+            </section>
+          </div>
 
           {/* STORY PAGE VIEW */}
           {activeView === 'story' && (
@@ -1763,6 +1778,7 @@ export default function App() {
           )}
 
         </AnimatePresence>
+        </ErrorBoundary>
       </main>
 
       {/* 3. Global Styling Assistant Floating Widget */}
@@ -1873,18 +1889,18 @@ export default function App() {
                     >
                       <div className="flex items-center space-x-3.5 truncate">
                         <img
-                          src={item.product.images[0]}
-                          alt={item.product.name}
+                          src={item.product?.images?.[0] ?? item.image}
+                          alt={item.product?.name ?? item.productName}
                           referrerPolicy="no-referrer"
                           className="w-12 h-16 object-cover rounded-md bg-stone-50"
                         />
                         <div className="truncate space-y-0.5">
-                          <h4 className="font-serif text-xs font-bold text-[#1c1917] truncate">{item.product.name}</h4>
+                          <h4 className="font-serif text-xs font-bold text-[#1c1917] truncate">{item.product?.name ?? item.productName}</h4>
                           <p className="text-[9px] text-[#a8a29e] font-mono">
                             Size: {item.size} | Color: {item.color}
                           </p>
                           <p className="mono-text text-xs font-bold text-[#1c1917]">
-                            ₹{item.product.price}
+                            ₹{item.product?.price ?? item.price}
                           </p>
                         </div>
                       </div>
@@ -2061,21 +2077,23 @@ export default function App() {
                     >
                       <div className="flex items-center space-x-3 truncate">
                         <img
-                          src={item.product.images[0]}
-                          alt={item.product.name}
+                          src={item.product?.images?.[0] ?? ''}
+                          alt={item.product?.name ?? ''}
                           referrerPolicy="no-referrer"
                           className="w-12 h-16 object-cover rounded-md"
                         />
                         <div className="truncate space-y-0.5">
-                          <h4 className="font-serif text-xs font-bold text-[#1c1917] truncate">{item.product.name}</h4>
-                          <p className="mono-text text-xs font-bold text-[#1c1917]">₹{item.product.price}</p>
+                          <h4 className="font-serif text-xs font-bold text-[#1c1917] truncate">{item.product?.name ?? 'Garment'}</h4>
+                          <p className="mono-text text-xs font-bold text-[#1c1917]">₹{item.product?.price ?? 0}</p>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => {
-                            handleAddToCart(item.product, 'M', item.product.colors[0]);
+                            if (item.product) {
+                              handleAddToCart(item.product, 'M', item.product.colors?.[0] || 'Default');
+                            }
                             setIsWishlistOpen(false);
                           }}
                           className="p-1.5 bg-[#1c1917] text-white hover:bg-stone-700 rounded-lg text-xs"
@@ -2084,7 +2102,7 @@ export default function App() {
                           <ShoppingBag className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => handleToggleWishlist(item.product.id)}
+                          onClick={() => handleToggleWishlist(item.product?.id || '')}
                           className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs"
                           title="Remove"
                         >
@@ -2580,20 +2598,20 @@ export default function App() {
                           <div key={index} className="py-2.5 flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3 min-w-0">
                               <img
-                                src={item.product.images[0]}
+                                src={item.product?.images?.[0] ?? item.image}
                                 alt=""
                                 referrerPolicy="no-referrer"
                                 className="w-10 h-13 object-cover rounded bg-stone-50 border border-stone-200 shrink-0"
                               />
                               <div className="min-w-0">
-                                <p className="font-serif text-xs font-bold text-stone-900 truncate">{item.product.name}</p>
+                                <p className="font-serif text-xs font-bold text-stone-900 truncate">{item.product?.name ?? item.productName}</p>
                                 <p className="text-[9px] text-stone-500 font-mono mt-0.5">
                                   Size: {item.size} | Color: {item.color} | Qty: {item.quantity}
                                 </p>
                               </div>
                             </div>
                             <span className="font-mono text-xs font-bold text-stone-800 shrink-0">
-                              ₹{item.product.price * item.quantity}
+                              ₹{(item.product?.price ?? item.price ?? 0) * item.quantity}
                             </span>
                           </div>
                         ))}

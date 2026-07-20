@@ -35,6 +35,7 @@ export function addItemToCart(
         quantity: 1,
         size,
         color,
+        product,
       },
     ];
   }

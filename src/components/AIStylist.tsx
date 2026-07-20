@@ -165,7 +165,10 @@ Whether you are looking to find your perfect custom size, style a specific piece
       )}
 
       {/* Chat Messages */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-4">
+      <div 
+        className="flex-1 p-4 overflow-y-auto space-y-4 scroll-smooth [WebkitOverflowScrolling:touch]"
+        data-lenis-prevent
+      >
         {messages.map((m) => (
           <div
             key={m.id}
@@ -178,7 +181,6 @@ Whether you are looking to find your perfect custom size, style a specific piece
             >
               {m.role === 'user' ? <User className="w-3.5 h-3.5" /> : 'V'}
             </div>
-
             <div
               className={`p-3.5 rounded-xl text-xs max-w-[82%] leading-relaxed ${
                 m.role === 'user'
@@ -192,7 +194,7 @@ Whether you are looking to find your perfect custom size, style a specific piece
         ))}
 
         {loading && (
-          <div className="flex items-start space-x-2.5">
+          <div className="flex items-start space-x-2.5 animate-fade-in">
             <div className="w-7 h-7 rounded-full bg-[#c2a46c]/10 text-[#c2a46c] flex items-center justify-center text-[10px] font-bold animate-pulse">
               V
             </div>
@@ -203,7 +205,7 @@ Whether you are looking to find your perfect custom size, style a specific piece
           </div>
         )}
 
-        <div ref={scrollToBottom} />
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Quick Presets */}

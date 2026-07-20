@@ -736,8 +736,8 @@ git push origin main`}
                   <input
                     type="text"
                     placeholder="e.g. Warm Taupe, Cream White"
-                    value={Array.isArray(editingProduct?.colors) ? editingProduct.colors.join(', ') : editingProduct?.colors || ''}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, colors: e.target.value })}
+                    value={Array.isArray(editingProduct?.colors) ? editingProduct.colors.join(', ') : (editingProduct?.colors as any) || ''}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, colors: e.target.value as any })}
                     className="w-full px-3.5 py-2 rounded-lg border border-[#d6d3d1] focus:outline-hidden focus:border-[#1c1917] text-xs font-outfit"
                   />
                 </div>
@@ -747,8 +747,8 @@ git push origin main`}
                   <input
                     type="text"
                     placeholder="e.g. peplum, asymmetric, resort"
-                    value={Array.isArray(editingProduct?.tags) ? editingProduct.tags.join(', ') : editingProduct?.tags || ''}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, tags: e.target.value })}
+                    value={Array.isArray(editingProduct?.tags) ? editingProduct.tags.join(', ') : (editingProduct?.tags as any) || ''}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, tags: e.target.value as any })}
                     className="w-full px-3.5 py-2 rounded-lg border border-[#d6d3d1] focus:outline-hidden focus:border-[#1c1917] text-xs font-outfit"
                   />
                 </div>
