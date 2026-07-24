@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Star, Sparkles, Shield, ArrowLeft, Plus, Minus, ShoppingBag, Truck, Undo2, ChevronRight, Check } from 'lucide-react';
+import { Heart, Star, Sparkles, Shield, ArrowLeft, Plus, Minus, ShoppingBag, Truck, Undo2, ChevronRight, Check, Maximize2, ZoomIn, ZoomOut, X, RotateCcw } from 'lucide-react';
 import { Product, WishlistItem } from '../types';
 import Breadcrumb from './Breadcrumb';
+import PinchZoomViewer from './PinchZoomViewer';
 
 interface ProductDetailPageProps {
   product: Product;
@@ -51,52 +52,20 @@ export default function ProductDetailPage({
   const [selectedOccasion, setSelectedOccasion] = useState<'office' | 'party' | 'home' | 'college'>('office');
   const [isAddedToast, setIsAddedToast] = useState(false);
 
-  // Hover to zoom effect states for detailed inspection of luxury fabrics (buttery smooth Amazon-style zoom)
-  const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({
-    transformOrigin: 'center center',
-    transform: 'scale(1)',
-    transition: 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform-origin 0.25s cubic-bezier(0.25, 1, 0.5, 1)'
-  });
+  // Fullscreen Lightbox Modal state
+  const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - left) / width) * 100;
-    const y = ((e.clientY - top) / height) * 100;
-    setZoomStyle({
-      transformOrigin: `${x}% ${y}%`,
-      transform: 'scale(1.4)', // Smooth, consistent marketplace-style scale factor
-      transition: 'transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), transform-origin 0.15s cubic-bezier(0.25, 1, 0.5, 1)'
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setZoomStyle({
-      transformOrigin: 'center center',
-      transform: 'scale(1)',
-      transition: 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform-origin 0.25s cubic-bezier(0.25, 1, 0.5, 1)'
-    });
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-    const x = ((touch.clientX - left) / width) * 100;
-    const y = ((touch.clientY - top) / height) * 100;
-    setZoomStyle({
-      transformOrigin: `${x}% ${y}%`,
-      transform: 'scale(1.4)',
-      transition: 'transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), transform-origin 0.15s cubic-bezier(0.25, 1, 0.5, 1)'
-    });
-  };
-
-  const handleTouchEnd = () => {
-    setZoomStyle({
-      transformOrigin: 'center center',
-      transform: 'scale(1)',
-      transition: 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform-origin 0.25s cubic-bezier(0.25, 1, 0.5, 1)'
-    });
-  };
+  // Keyboard accessibility for Lightbox Modal
+  useEffect(() => {
+    if (!isZoomModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsZoomModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isZoomModalOpen]);
 
   // Synchronize active image state if selected product changes
   useEffect(() => {
@@ -227,34 +196,34 @@ export default function ProductDetailPage({
           
           {/* Left Block: Image Carousel and Thumbnails (Col span 7) */}
           <div className="lg:col-span-7 space-y-4">
-            {/* Large primary visual with smooth interactive hover-to-zoom */}
+            {/* Large primary visual - touch pinch-to-zoom powered by @use-gesture/react & @react-spring/web */}
             <div 
-              className="aspect-[3/4] bg-stone-50 rounded-2xl overflow-hidden border border-stone-200/80 relative cursor-zoom-in select-none"
-              onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
+              className="aspect-[3/4] bg-stone-50 rounded-2xl overflow-hidden border border-stone-200/80 relative select-none group"
+              title="Pinch to zoom or click to inspect full screen"
             >
-              <img
+              <PinchZoomViewer
                 src={activeImage}
                 alt={product.name}
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover object-center transition-transform duration-150 ease-out"
-                style={zoomStyle}
+                className="w-full h-full"
+                imgClassName="object-cover object-center transition-transform duration-300 group-hover:scale-[1.02]"
+                onClick={() => {
+                  setIsZoomModalOpen(true);
+                }}
               />
               {discountPercent > 0 && (
-                <span className="absolute top-4 left-4 bg-red-600 text-[#fafaf9] text-xs font-sans font-bold px-3 py-1 rounded shadow-md pointer-events-none">
+                <span className="absolute top-4 left-4 bg-red-600 text-[#fafaf9] text-xs font-sans font-bold px-3 py-1 rounded shadow-md pointer-events-none z-10">
                   -{discountPercent}% OFF
                 </span>
               )}
               {product.isTrending && (
-                <span className="absolute top-4 right-4 bg-[#c2a46c] text-white text-[10px] uppercase tracking-wider px-3 py-1 rounded font-bold shadow-md pointer-events-none">
+                <span className="absolute top-4 right-4 bg-[#c2a46c] text-white text-[10px] uppercase tracking-wider px-3 py-1 rounded font-bold shadow-md pointer-events-none z-10">
                   Best Seller
                 </span>
               )}
-              {/* Subtle visual prompt */}
-              <div className="absolute bottom-4 left-4 right-4 text-center bg-black/40 backdrop-blur-xs text-white text-[10px] font-mono tracking-widest py-1.5 rounded-lg opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity pointer-events-none uppercase">
-                Hover to Zoom Fabric Textures
+              {/* Expand prompt overlay */}
+              <div className="absolute bottom-4 right-4 bg-stone-900/80 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-[11px] font-mono tracking-wider flex items-center space-x-1.5 shadow-lg group-hover:bg-black transition-colors pointer-events-none z-10">
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>Pinch / Click to Inspect</span>
               </div>
             </div>
 
@@ -643,6 +612,101 @@ export default function ProductDetailPage({
         )}
 
       </div>
+
+      {/* Interactive Fullscreen Image Lightbox Modal */}
+      <AnimatePresence>
+        {isZoomModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6"
+            onClick={() => {
+              setIsZoomModalOpen(false);
+            }}
+          >
+            {/* Top Header Controls Bar */}
+            <div 
+              className="flex items-center justify-between text-white z-10 bg-stone-900/90 backdrop-blur-md px-4 py-3 rounded-2xl border border-stone-800"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center space-x-3">
+                <span className="text-xs font-serif font-bold text-[#c2a46c]">
+                  {product.name}
+                </span>
+                <span className="text-[10px] font-mono text-stone-400 hidden sm:inline-block">
+                  (Pinch or Double-Tap to Zoom & Drag to Pan)
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <span className="text-[10px] font-mono bg-stone-800 text-stone-300 px-3 py-1 rounded-full border border-stone-700">
+                  Touch Gesture Mode
+                </span>
+
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsZoomModalOpen(false);
+                  }}
+                  className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 transition-colors cursor-pointer"
+                  title="Close (Esc)"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Center Main Zoomable Image Viewport with Pinch & Drag Gestures powered by @use-gesture/react and @react-spring/web */}
+            <div 
+              className="flex-1 flex items-center justify-center overflow-hidden my-2 sm:my-4 relative select-none touch-none"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <PinchZoomViewer
+                src={activeImage}
+                alt={product.name}
+                className="w-full h-[75vh] flex items-center justify-center"
+                imgClassName="max-h-[75vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
+                maxScale={4}
+                minScale={0.8}
+                doubleTapScale={2.5}
+              />
+            </div>
+
+            {/* Bottom Thumbnail Navigation Bar */}
+            {product.images.length > 1 && (
+              <div 
+                className="flex items-center justify-center space-x-3 overflow-x-auto py-2 z-10"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {product.images.map((img, idx) => {
+                  const isActive = activeImage === img;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setActiveImage(img);
+                      }}
+                      className={`w-12 h-16 sm:w-16 sm:h-20 rounded-xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
+                        isActive ? 'border-[#c2a46c] ring-2 ring-[#c2a46c]/40 scale-105' : 'border-stone-700 opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <img
+                        src={img}
+                        alt={`Angle ${idx + 1}`}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

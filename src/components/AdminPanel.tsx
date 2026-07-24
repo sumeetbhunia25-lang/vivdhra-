@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Package, ShoppingBag, PieChart, TrendingUp, AlertTriangle, Sparkles, Plus, Edit2, Trash2, Check, RefreshCw, Download } from 'lucide-react';
-import { Product, Order, DonationTarget } from '../types';
+import { Product, Order } from '../types';
 
 interface AdminPanelProps {
   products: Product[];
   orders: Order[];
-  charities: DonationTarget[];
   onAddProduct: (product: Product) => Promise<any>;
   onDeleteProduct: (id: string) => Promise<any>;
   onUpdateOrderStatus: (orderId: string, status: Order['status']) => Promise<any>;
@@ -14,7 +13,6 @@ interface AdminPanelProps {
 export default function AdminPanel({
   products,
   orders,
-  charities,
   onAddProduct,
   onDeleteProduct,
   onUpdateOrderStatus,
@@ -179,7 +177,6 @@ export default function AdminPanel({
   const [aiInsights, setAiInsights] = useState<{
     trendingOccasions: string;
     sizingAdvisory: string;
-    donationImpact: string;
   } | null>(null);
   const [loadingInsights, setLoadingInsights] = useState(false);
 
@@ -250,7 +247,6 @@ export default function AdminPanel({
   };
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.subtotal, 0);
-  const totalDonationsCombined = charities.reduce((sum, c) => sum + c.totalDonated, 0);
 
   return (
     <div className="pt-24 md:pt-32 pb-20 max-w-7xl mx-auto px-4 md:px-8">
@@ -314,7 +310,7 @@ export default function AdminPanel({
         <div className="space-y-10 animate-fade-in">
           
           {/* Quick Metrics Panels */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div className="bg-white p-5 rounded-xl border border-[#e7e5e4]">
               <span className="text-[10px] uppercase font-mono tracking-wider text-[#78716c]">Combined Revenue</span>
               <p className="font-serif text-2xl font-bold text-[#1c1917] mt-1">₹{totalRevenue.toLocaleString('en-IN')}</p>
@@ -322,12 +318,6 @@ export default function AdminPanel({
                 <TrendingUp className="w-3 h-3" />
                 <span>Direct atelier ledger</span>
               </div>
-            </div>
-
-            <div className="bg-white p-5 rounded-xl border border-[#e7e5e4]">
-              <span className="text-[10px] uppercase font-mono tracking-wider text-[#78716c]">Combined Charity Raised</span>
-              <p className="font-serif text-2xl font-bold text-emerald-600 mt-1">₹{totalDonationsCombined.toLocaleString('en-IN')}</p>
-              <span className="text-[10px] text-[#78716c] font-light">Dress with purpose</span>
             </div>
 
             <div className="bg-white p-5 rounded-xl border border-[#e7e5e4]">
@@ -340,27 +330,6 @@ export default function AdminPanel({
               <span className="text-[10px] uppercase font-mono tracking-wider text-[#78716c]">Completed Orders</span>
               <p className="font-serif text-2xl font-bold text-[#1c1917] mt-1">{orders.length} Logged</p>
               <span className="text-[10px] text-stone-500 font-mono">Status: 100% Secure</span>
-            </div>
-          </div>
-
-          {/* Charity Pools Breakdown */}
-          <div className="bg-white p-6 rounded-2xl border border-[#e7e5e4]">
-            <h3 className="serif-header text-lg font-bold text-[#1c1917] mb-6">
-              Charitable Fundraising Pools
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {charities.map((c) => (
-                <div key={c.id} className="p-4 bg-[#f5f5f4]/50 border border-[#e7e5e4] rounded-xl flex flex-col justify-between">
-                  <div>
-                    <h4 className="font-serif text-xs font-bold text-[#1c1917] truncate">{c.name}</h4>
-                    <p className="text-[11px] text-[#78716c] mt-1 line-clamp-2 leading-relaxed">{c.description}</p>
-                  </div>
-                  <div className="pt-4 border-t border-[#e7e5e4] mt-4 flex items-end justify-between">
-                    <span className="text-[10px] uppercase tracking-wider text-[#a8a29e]">Pool Total</span>
-                    <span className="font-mono text-sm font-bold text-[#1c1917]">₹{c.totalDonated.toLocaleString('en-IN')}</span>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
 
@@ -396,10 +365,10 @@ export default function AdminPanel({
             {loadingInsights ? (
               <div className="py-12 flex flex-col items-center justify-center space-y-3">
                 <RefreshCw className="w-8 h-8 text-[#c2a46c] animate-spin" />
-                <span className="text-xs text-[#78716c] font-mono">Assembling inventory, fit coordinates, and donor logs...</span>
+                <span className="text-xs text-[#78716c] font-mono">Assembling inventory and fit coordinates...</span>
               </div>
             ) : aiInsights ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
                 <div className="space-y-2">
                   <span className="text-[10px] uppercase tracking-wider text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full font-mono font-medium">
@@ -416,15 +385,6 @@ export default function AdminPanel({
                   </span>
                   <p className="text-xs text-[#57534e] font-light leading-relaxed whitespace-pre-line pt-2">
                     {aiInsights.sizingAdvisory}
-                  </p>
-                </div>
-
-                <div className="space-y-2 border-t md:border-t-0 md:border-l border-[#e7e5e4] pt-6 md:pt-0 md:pl-8">
-                  <span className="text-[10px] uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full font-mono font-medium">
-                    3. Purpose Slogan Impact
-                  </span>
-                  <p className="text-xs text-[#57534e] font-light leading-relaxed whitespace-pre-line pt-2">
-                    {aiInsights.donationImpact}
                   </p>
                 </div>
 
@@ -902,7 +862,6 @@ git push origin main`}
                   <th className="py-3 px-4 font-semibold">Customer</th>
                   <th className="py-3 px-4 font-semibold">Address / City</th>
                   <th className="py-3 px-4 font-semibold">Items Count</th>
-                  <th className="py-3 px-4 font-semibold">Purpose Roundup</th>
                   <th className="py-3 px-4 font-semibold">Total Price</th>
                   <th className="py-3 px-4 font-semibold">Atelier Status</th>
                 </tr>
@@ -937,9 +896,6 @@ git push origin main`}
                     </td>
                     <td className="py-4 px-4 font-mono text-[#1c1917]">
                       {order.items.reduce((acc, i) => acc + i.quantity, 0)} pc(s)
-                    </td>
-                    <td className="py-4 px-4 font-mono font-bold text-emerald-600">
-                      ₹{order.donationAmount || 0}
                     </td>
                     <td className="py-4 px-4">
                       <p className="font-mono font-bold text-[#1c1917]">

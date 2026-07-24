@@ -56,31 +56,13 @@ export interface WishlistItem {
   addedAt?: string;
 }
 
-export interface DonationTarget {
-  id: string;
-  name: string;
-  description: string;
-  image: string;
-  totalDonated: number;
-  impactLabel: string;
-}
-
-export interface DonationLog {
-  id: string;
-  donorName: string;
-  donorEmail: string;
-  amount: number;
-  targetCharities: string[]; // IDs of charities
-  timestamp: string;
-}
-
 export interface Order {
   id: string;
   customerEmail: string;
   customerName: string;
   items: CartItem[];
   subtotal: number;
-  donationAmount: number;
+  donationAmount?: number;
   total: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered';
   createdAt: string;

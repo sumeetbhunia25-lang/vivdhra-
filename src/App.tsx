@@ -34,11 +34,10 @@ import {
   Trash2,
   History
 } from 'lucide-react';
-import { Product, CartItem, WishlistItem, Order, DonationTarget, DonationLog, FitProfile, UserAccount } from './types';
+import { Product, CartItem, WishlistItem, Order, FitProfile, UserAccount } from './types';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import VividhraStyleProductCard from './components/VividhraStyleProductCard';
-import DonationTrackerPage from './components/DonationTrackerPage';
 import FitProfileForm from './components/FitProfileForm';
 import AIStylist from './components/AIStylist';
 import AdminPanel from './components/AdminPanel';
@@ -106,8 +105,6 @@ export default function App() {
   // Database lists
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [charities, setCharities] = useState<DonationTarget[]>([]);
-  const [donationLogs, setDonationLogs] = useState<DonationLog[]>([]);
 
   // Interactive states
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -244,8 +241,6 @@ export default function App() {
   // Full-stack e-commerce dynamic data cache
   const productCacheRef = useRef<{
     products: Product[];
-    charities: any[];
-    donationLogs: any[];
     orders: any[];
     timestamp: number;
   } | null>(null);
@@ -388,8 +383,6 @@ export default function App() {
   const [checkoutEmail, setCheckoutEmail] = useState('');
   const [checkoutAddress, setCheckoutAddress] = useState('');
   const [checkoutCity, setCheckoutCity] = useState('');
-  const [isRoundUpEnabled, setIsRoundUpEnabled] = useState(true);
-  const [checkoutCharities, setCheckoutCharities] = useState<string[]>([]);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState('');
 
@@ -415,9 +408,7 @@ export default function App() {
   // States to preserve details for the simulated email order receipt
   const [lastOrderItems, setLastOrderItems] = useState<any[]>([]);
   const [lastOrderSubtotal, setLastOrderSubtotal] = useState(0);
-  const [lastOrderRoundUp, setLastOrderRoundUp] = useState(0);
   const [lastOrderTotal, setLastOrderTotal] = useState(0);
-  const [lastOrderCharities, setLastOrderCharities] = useState<string[]>([]);
   const [lastOrderEmail, setLastOrderEmail] = useState('');
   const [lastOrderName, setLastOrderName] = useState('');
   const [lastOrderAddress, setLastOrderAddress] = useState('');
@@ -505,13 +496,13 @@ export default function App() {
         gsap.killTweensOf(cards);
         gsap.fromTo(
           cards,
-          { opacity: 0, y: 50 },
+          { opacity: 0.85, y: 12 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.85,
-            stagger: 0.1,
-            ease: 'power3.out',
+            duration: 0.2,
+            stagger: 0.015,
+            ease: 'power2.out',
             overwrite: 'auto'
           }
         );
@@ -520,29 +511,24 @@ export default function App() {
 
     observer.observe(productGridRef.current);
 
-    // Trigger on mount or products change
-    const delay = setTimeout(() => {
-      animateCards();
-    }, 100);
+    // Immediate execution without artificial delay
+    animateCards();
 
     return () => {
       observer.disconnect();
-      clearTimeout(delay);
     };
-  }, [products, selectedCategory, searchQuery]);
+  }, [products, selectedCategory, searchQuery, activeView]);
 
-  // Fetch full-stack database states with robust automatic retries and client-side memory cache
-  const loadData = async (retries = 5, delayMs = 1500, forceFetch = false) => {
+  // Fetch full-stack database states with fast client-side memory cache
+  const loadData = async (retries = 3, delayMs = 500, forceFetch = false) => {
     // If not a forced fetch, and we already have products and other state in memory, return instantly!
-    if (!forceFetch && products && products.length > 0 && charities && charities.length > 0 && orders && orders.length > 0) {
+    if (!forceFetch && products && products.length > 0) {
       return;
     }
     // Return cached values immediately if fresh (within 5 minutes) and not a forced re-fetch
     if (productCacheRef.current && !forceFetch && (Date.now() - productCacheRef.current.timestamp < 300000)) {
       setProducts(productCacheRef.current.products);
-      setCharities(productCacheRef.current.charities);
-      setDonationLogs(productCacheRef.current.donationLogs);
-      setOrders(productCacheRef.current.orders);
+      if (productCacheRef.current.orders) setOrders(productCacheRef.current.orders);
       return;
     }
 
@@ -560,36 +546,25 @@ export default function App() {
           return res.json();
         };
 
-        const [prodRes, targetRes, logRes, orderRes] = await Promise.all([
+        const [prodRes, orderRes] = await Promise.all([
           fetchJSON('/api/products'),
-          fetchJSON('/api/donations/targets'),
-          fetchJSON('/api/donations/logs'),
           fetchJSON('/api/orders'),
         ]);
 
         setProducts(prodRes);
-        setCharities(targetRes);
-        setDonationLogs(logRes);
         setOrders(orderRes);
 
         // Store fetched values in cache
         productCacheRef.current = {
           products: prodRes,
-          charities: targetRes,
-          donationLogs: logRes,
           orders: orderRes,
           timestamp: Date.now(),
         };
-
-        // Pre-select checkout charities
-        if (targetRes.length > 0) {
-          setCheckoutCharities(targetRes.map((c: any) => c.id));
-        }
         
         return; // Success!
       } catch (err) {
         if (attempt === retries) {
-          console.error('Error loading database structures:', err);
+          console.warn('Database structures loading warning (all retries exhausted):', err);
         } else {
           console.warn(`Attempt ${attempt} to load database failed. Retrying in ${delayMs}ms...`, err);
           await new Promise((resolve) => setTimeout(resolve, delayMs));
@@ -840,18 +815,6 @@ export default function App() {
     }
   };
 
-  // Direct Direct Donation Handler
-  const handleDirectDonation = async (donorName: string, donorEmail: string, amount: number, selectedCharityIds: string[]) => {
-    const res = await fetch('/api/donations/logs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ donorName, donorEmail, amount, targetCharities: selectedCharityIds }),
-    });
-    const data = await res.json();
-    await loadData(); // Reload stats and logs
-    return data;
-  };
-
   // Save Fit Sizing Profile
   const handleSaveFitProfile = async (profile: FitProfile) => {
     const res = await fetch('/api/user/profile', {
@@ -906,9 +869,7 @@ export default function App() {
   // Free Shipping Threshold of ₹5000: if subtotal is > 0 and < ₹5000, charge ₹150 flat shipping
   const shippingFee = cartSubtotal > 0 && discountedSubtotal < 5000 ? 150 : 0;
   
-  const nextHundredValue = Math.ceil((discountedSubtotal + shippingFee + 10) / 100) * 100;
-  const computedRoundUp = isRoundUpEnabled && cartSubtotal > 0 ? (nextHundredValue - (discountedSubtotal + shippingFee)) : 0;
-  const checkoutTotal = discountedSubtotal + shippingFee + computedRoundUp;
+  const checkoutTotal = discountedSubtotal + shippingFee;
 
   // Handle Promo Code Submission
   const handleApplyPromo = (e: React.FormEvent) => {
@@ -962,8 +923,6 @@ export default function App() {
         promoDiscount: promoDiscount,
         promoCode: appliedPromo ? appliedPromo.code : null,
         shippingFee: shippingFee,
-        donationAmount: computedRoundUp,
-        donationCharities: isRoundUpEnabled ? checkoutCharities : [],
         total: checkoutTotal,
       };
 
@@ -984,9 +943,7 @@ export default function App() {
       setLastOrderPhone(checkoutPhone);
       setLastOrderNotes(checkoutNotes);
       setLastOrderPaymentMethod(paymentMethod);
-      setLastOrderRoundUp(computedRoundUp);
       setLastOrderTotal(checkoutTotal);
-      setLastOrderCharities(isRoundUpEnabled ? [...checkoutCharities] : []);
       setLastOrderEmail(checkoutEmail);
       setLastOrderName(checkoutName);
       setLastOrderAddress(checkoutAddress);
@@ -1241,7 +1198,7 @@ export default function App() {
                       isWishlisted={wishlist.some((w) => w.product?.id === prod.id)}
                       onQuickView={(p) => setQuickViewProduct(p)}
                       onSelectProduct={(p) => setSelectedProduct(p)}
-                      className="gsap-product-card opacity-0 h-full"
+                      className="gsap-product-card h-full"
                     />
                   ))}
                 </div>
@@ -1769,7 +1726,6 @@ export default function App() {
               <AdminPanel
                 products={products}
                 orders={orders}
-                charities={charities}
                 onAddProduct={handleAdminAddProduct}
                 onDeleteProduct={handleAdminDeleteProduct}
                 onUpdateOrderStatus={handleAdminUpdateOrderStatus}
@@ -2013,15 +1969,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="p-2.5 bg-emerald-50 rounded-lg border border-emerald-100 space-y-0.5">
-                  <div className="flex items-center justify-between text-[11px] text-emerald-800 font-bold">
-                    <span>Atelier Purpose Roundup (Optional)</span>
-                    <span>₹{computedRoundUp}</span>
-                  </div>
-                  <p className="text-[9px] text-emerald-600 leading-normal">
-                    Turn ₹{discountedSubtotal + shippingFee} into ₹{nextHundredValue} at checkout to support animal care, orphans, and the disabled.
-                  </p>
-                </div>
+
 
                 <button
                   onClick={() => {
@@ -2562,7 +2510,7 @@ export default function App() {
                       <p className="font-serif text-sm font-bold text-stone-950">Dear {lastOrderName},</p>
                       <p className="text-xs text-stone-600 leading-relaxed">
                         We are honored to confirm receipt of your tailored order. Our master artisans at the Mumbai atelier are now preparing your selected items with surgical precision. 
-                        A summary of your transactions, shipping coordinates, and your community charity ledger split are structured below.
+                        A summary of your transaction details and shipping coordinates are structured below.
                       </p>
                     </div>
 
@@ -2636,61 +2584,11 @@ export default function App() {
                           {lastOrderShippingFee === 0 ? "Complimentary" : `₹${lastOrderShippingFee}`}
                         </span>
                       </div>
-                      {lastOrderRoundUp > 0 && (
-                        <div className="flex justify-between text-emerald-700 font-semibold bg-emerald-50/50 p-1.5 rounded-md">
-                          <span className="flex items-center gap-1">🌿 Dress with Purpose Roundup</span>
-                          <span className="font-mono">₹{lastOrderRoundUp}</span>
-                        </div>
-                      )}
                       <div className="flex justify-between text-sm font-bold text-stone-900 pt-2 border-t">
                         <span>Total Transacted & Settled</span>
                         <span className="font-mono text-[#c2a46c]">₹{lastOrderTotal}</span>
                       </div>
                     </div>
-
-                    {/* Charity Impact Summary */}
-                    {lastOrderRoundUp > 0 && lastOrderCharities.length > 0 ? (
-                      <div className="bg-emerald-50/40 border border-emerald-100/80 rounded-xl p-4 space-y-3.5">
-                        <div className="space-y-1 text-center">
-                          <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-800 block">🌱 Purpose Split Analysis</span>
-                          <p className="text-xs text-emerald-800 font-bold">
-                            ₹{lastOrderRoundUp} split equally among {lastOrderCharities.length} community partners
-                          </p>
-                          <p className="text-[10px] text-emerald-600 leading-normal max-w-md mx-auto">
-                            Thank you! Under our immutable ledger, 100% of your round-up is transferred to direct-support community programs.
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                          {charities
-                            .filter((c) => lastOrderCharities.includes(c.id))
-                            .map((c) => {
-                              const share = (lastOrderRoundUp / lastOrderCharities.length).toFixed(2);
-                              return (
-                                <div key={c.id} className="bg-white p-3 rounded-lg border border-emerald-100 space-y-2 flex flex-col justify-between shadow-3xs">
-                                  <div className="space-y-1">
-                                    <p className="text-xs font-bold text-stone-900 font-outfit flex items-center gap-1.5">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                                      <span>{c.name}</span>
-                                    </p>
-                                    <p className="text-[10px] text-stone-500 leading-normal font-outfit">
-                                      {c.description}
-                                    </p>
-                                  </div>
-                                  <div className="pt-2 border-t border-stone-50 mt-1 flex items-center justify-between">
-                                    <span className="text-[9px] uppercase tracking-wider font-mono text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">Dispatched</span>
-                                    <span className="font-mono text-xs font-bold text-emerald-700 font-outfit">₹{share}</span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-stone-50 rounded-xl text-center text-xs text-stone-500 border border-stone-100 font-outfit">
-                        No charity round-up was chosen for this transaction. Feel free to opt-in on future coordinates to split spare change with social causes!
-                      </div>
-                    )}
 
                     {/* Closing Slogan */}
                     <div className="text-center pt-6 border-t border-stone-100 text-stone-400 space-y-1">
@@ -2859,58 +2757,6 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
-                  <label className="flex items-start space-x-2.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isRoundUpEnabled}
-                      onChange={(e) => setIsRoundUpEnabled(e.target.checked)}
-                      className="rounded border-stone-300 text-stone-900 focus:ring-0 mt-0.5"
-                    />
-                    <div>
-                      <span className="text-xs font-bold text-stone-900 font-outfit block">
-                        Enable &ldquo;Dress with purpose&rdquo; Roundup
-                      </span>
-                      <span className="text-[10px] text-stone-500 leading-normal block mt-0.5">
-                        Round up from ₹{discountedSubtotal + shippingFee} to ₹{nextHundredValue} (contributing ₹{computedRoundUp}) to split among animal shelters, old age caretakers, orphans, and the disabled.
-                      </span>
-                    </div>
-                  </label>
-
-                  {isRoundUpEnabled && charities.length > 0 && (
-                    <div className="space-y-1.5 pt-2 border-t">
-                      <span className="text-[10px] uppercase font-mono tracking-wider text-stone-500 block">
-                        Target Charities (Split equally)
-                      </span>
-                      <div className="grid grid-cols-2 gap-2">
-                        {charities.map((c) => {
-                          const active = checkoutCharities.includes(c.id);
-                          return (
-                            <button
-                              key={c.id}
-                              type="button"
-                              onClick={() => {
-                                if (active) {
-                                  setCheckoutCharities(checkoutCharities.filter((x) => x !== c.id));
-                                } else {
-                                  setCheckoutCharities([...checkoutCharities, c.id]);
-                                }
-                              }}
-                              className={`py-1 px-2 rounded-lg border text-[10px] font-outfit text-left truncate transition-colors ${
-                                active
-                                  ? 'bg-[#1c1917] text-white border-[#1c1917]'
-                                  : 'bg-white text-stone-600 hover:bg-stone-100'
-                              }`}
-                            >
-                              ✓ {c.name.split(' ')[0]}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
                 <div className="space-y-1.5 font-outfit text-stone-600 text-xs">
                   <div className="flex justify-between">
                     <span>Sourcing Subtotal</span>
@@ -2928,12 +2774,6 @@ export default function App() {
                       {shippingFee === 0 ? <span className="text-emerald-700 uppercase font-bold text-[10px]">Complimentary</span> : `₹${shippingFee}`}
                     </span>
                   </div>
-                  {isRoundUpEnabled && (
-                    <div className="flex justify-between">
-                      <span>Purpose roundup</span>
-                      <span className="font-mono text-stone-900">₹{computedRoundUp}</span>
-                    </div>
-                  )}
                   <div className="flex justify-between text-sm font-bold pt-1.5 border-t text-stone-900">
                     <span>Total secured amount</span>
                     <span className="font-mono text-[#c2a46c]">₹{checkoutTotal}</span>

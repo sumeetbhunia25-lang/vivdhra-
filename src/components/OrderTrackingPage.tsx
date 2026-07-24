@@ -90,8 +90,8 @@ export default function OrderTrackingPage({ orders, currentUserEmail, onBackToSh
           }
         ],
         subtotal: 3499,
-        donationAmount: 350,
-        total: 3849,
+        donationAmount: 0,
+        total: 3499,
         status: id.charCodeAt(id.length - 1) % 4 === 0 ? 'delivered' 
               : id.charCodeAt(id.length - 1) % 3 === 0 ? 'shipped' 
               : 'processing',
@@ -428,14 +428,6 @@ export default function OrderTrackingPage({ orders, currentUserEmail, onBackToSh
                     <span>Order Subtotal</span>
                     <span className="font-mono">₹{selectedOrder.subtotal.toLocaleString('en-IN')}</span>
                   </div>
-                  {selectedOrder.donationAmount > 0 && (
-                    <div className="flex justify-between text-emerald-600 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Heart className="w-3.5 h-3.5 fill-emerald-600" /> Purpose Donation
-                      </span>
-                      <span className="font-mono">+₹{selectedOrder.donationAmount.toLocaleString('en-IN')}</span>
-                    </div>
-                  )}
                   {selectedOrder.shippingFee !== undefined && (
                     <div className="flex justify-between text-stone-500">
                       <span>Express Shipping Fee</span>

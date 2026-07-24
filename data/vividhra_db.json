@@ -28,7 +28,8 @@
       ],
       "inStock": true,
       "fitType": "regular",
-      "isTrending": true
+      "isTrending": true,
+      "stock": 2
     },
     {
       "id": "p15",
@@ -56,7 +57,8 @@
       ],
       "inStock": true,
       "fitType": "slim",
-      "isTrending": true
+      "isTrending": true,
+      "stock": 1
     },
     {
       "id": "p16",
@@ -84,7 +86,8 @@
       ],
       "inStock": true,
       "fitType": "slim",
-      "isTrending": true
+      "isTrending": true,
+      "stock": 9
     },
     {
       "id": "p17",
@@ -110,9 +113,10 @@
         "Saffron Clay",
         "Chalk Offwhite"
       ],
-      "inStock": true,
+      "inStock": false,
       "fitType": "regular",
-      "isTrending": true
+      "isTrending": true,
+      "stock": 0
     },
     {
       "id": "p18",
@@ -141,7 +145,8 @@
       ],
       "inStock": true,
       "fitType": "slim",
-      "isTrending": false
+      "isTrending": false,
+      "stock": 5
     },
     {
       "id": "p19",
@@ -169,7 +174,8 @@
       ],
       "inStock": true,
       "fitType": "regular",
-      "isTrending": true
+      "isTrending": true,
+      "stock": 6
     },
     {
       "id": "p1",
@@ -199,7 +205,8 @@
       ],
       "inStock": true,
       "fitType": "slim",
-      "isTrending": true
+      "isTrending": true,
+      "stock": 5
     },
     {
       "id": "p2",
@@ -227,7 +234,8 @@
       ],
       "inStock": true,
       "fitType": "slim",
-      "isTrending": true
+      "isTrending": true,
+      "stock": 2
     },
     {
       "id": "p3",
@@ -257,7 +265,8 @@
       ],
       "inStock": true,
       "fitType": "regular",
-      "isTrending": false
+      "isTrending": false,
+      "stock": 2
     },
     {
       "id": "p4",
@@ -285,9 +294,10 @@
         "Desert Sand",
         "Midnight Charcoal"
       ],
-      "inStock": true,
+      "inStock": false,
       "fitType": "regular",
-      "isTrending": true
+      "isTrending": true,
+      "stock": 0
     },
     {
       "id": "p5",
@@ -317,7 +327,8 @@
       ],
       "inStock": true,
       "fitType": "oversized",
-      "isTrending": false
+      "isTrending": false,
+      "stock": 10
     },
     {
       "id": "p6",
@@ -346,7 +357,8 @@
       ],
       "inStock": true,
       "fitType": "regular",
-      "isTrending": true
+      "isTrending": true,
+      "stock": 13
     },
     {
       "id": "p7",
@@ -376,7 +388,8 @@
       ],
       "inStock": true,
       "fitType": "slim",
-      "isTrending": false
+      "isTrending": false,
+      "stock": 5
     },
     {
       "id": "p8",
@@ -405,7 +418,8 @@
       ],
       "inStock": true,
       "fitType": "oversized",
-      "isTrending": true
+      "isTrending": true,
+      "stock": 10
     },
     {
       "id": "p9",
@@ -435,7 +449,8 @@
       ],
       "inStock": true,
       "fitType": "regular",
-      "isTrending": true
+      "isTrending": true,
+      "stock": 5
     },
     {
       "id": "p10",
@@ -461,9 +476,10 @@
         "Chalk Offwhite",
         "Obsidian Black"
       ],
-      "inStock": true,
+      "inStock": false,
       "fitType": "slim",
-      "isTrending": true
+      "isTrending": true,
+      "stock": 0
     },
     {
       "id": "p11",
@@ -493,7 +509,8 @@
       ],
       "inStock": true,
       "fitType": "oversized",
-      "isTrending": false
+      "isTrending": false,
+      "stock": 8
     },
     {
       "id": "p12",
@@ -523,7 +540,8 @@
       ],
       "inStock": true,
       "fitType": "regular",
-      "isTrending": true
+      "isTrending": true,
+      "stock": 5
     },
     {
       "id": "p13",
@@ -553,64 +571,253 @@
       ],
       "inStock": true,
       "fitType": "regular",
-      "isTrending": true
-    }
-  ],
-  "charities": [
-    {
-      "id": "c1",
-      "name": "Dignity Old Age Homes",
-      "description": "Providing food, healthcare, and comfortable shelters to homeless and neglected senior citizens.",
-      "image": "https://images.unsplash.com/photo-1581579438747-1dc8d1e0ca96?auto=format&fit=crop&q=80&w=400",
-      "totalDonated": 42350,
-      "impactLabel": "Shelter days provided"
+      "isTrending": true,
+      "stock": 2
     },
     {
-      "id": "c2",
-      "name": "Voice of Animals Foundation",
-      "description": "Funding medical aid, rescue ambulances, and food drives for injured stray and community animals.",
-      "image": "https://images.unsplash.com/photo-1548767797-d8c844163c4c?auto=format&fit=crop&q=80&w=400",
-      "totalDonated": 38200,
-      "impactLabel": "Animals fed & treated"
-    },
-    {
-      "id": "c3",
-      "name": "Yuva Orphans Trust",
-      "description": "Empowering children with school scholarships, digital classrooms, and loving foster care.",
-      "image": "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=400",
-      "totalDonated": 51200,
-      "impactLabel": "Education sponsors logged"
-    },
-    {
-      "id": "c4",
-      "name": "Enable India (Disabled Care)",
-      "description": "Sponsoring prosthetic limbs, custom assistive tech, and vocational training for differently-abled women.",
-      "image": "https://images.unsplash.com/photo-1534761049852-325012285213?auto=format&fit=crop&q=80&w=400",
-      "totalDonated": 45700,
-      "impactLabel": "Vocational kits distributed"
-    }
-  ],
-  "donationLogs": [
-    {
-      "id": "dl1",
-      "donorName": "Smita Sharma",
-      "donorEmail": "smita.sharma@vividhra.com",
-      "amount": 5000,
-      "targetCharities": [
-        "c3"
+      "id": "p20",
+      "name": "Taupe Asymmetric Peplum Top",
+      "category": "tops",
+      "subcategory": "Statement Tops",
+      "price": 1899,
+      "originalPrice": 2499,
+      "description": "An elegant statement peplum top designed with clean asymmetric drapes and structured waist pleats. A modern classic for styling versatility.",
+      "slogan": "Dress with purpose",
+      "materials": "100% GOTS Certified Organic Cotton Weave",
+      "care": "Dry clean recommended. Mild steam iron.",
+      "images": [
+        "/uploads/51878.jpg"
       ],
-      "timestamp": "2026-06-25T12:00:00.000Z"
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Warm Taupe",
+        "Vanilla Offwhite"
+      ],
+      "inStock": false,
+      "fitType": "slim",
+      "isTrending": true,
+      "tags": [
+        "peplum",
+        "asymmetric",
+        "cotton"
+      ],
+      "stock": 0
     },
     {
-      "id": "dl2",
-      "donorName": "Aditi Rao",
-      "donorEmail": "aditi@yahoo.com",
-      "amount": 1500,
-      "targetCharities": [
-        "c1",
-        "c2"
+      "id": "p21",
+      "name": "Mocha Belted Drape Top",
+      "category": "tops",
+      "subcategory": "Occasion Tops",
+      "price": 1999,
+      "originalPrice": 2699,
+      "description": "A beautifully draped high-neck top in a luxurious mocha brown, styled with an adjustable sash belt to define the waist.",
+      "slogan": "Dress with purpose",
+      "materials": "85% Sustainably Harvested Lyocell, 15% Organic Linen",
+      "care": "Hand wash cold. Lay flat to dry in shade.",
+      "images": [
+        "/uploads/52221.jpg"
       ],
-      "timestamp": "2026-06-26T14:30:00.000Z"
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Rich Mocha",
+        "Espresso Dark"
+      ],
+      "inStock": true,
+      "fitType": "regular",
+      "isTrending": true,
+      "tags": [
+        "draped",
+        "belted",
+        "linen"
+      ],
+      "stock": 8
+    },
+    {
+      "id": "p22",
+      "name": "Olive Sculpted Wrap Top",
+      "category": "tops",
+      "subcategory": "Occasion Tops",
+      "price": 1799,
+      "originalPrice": 2399,
+      "description": "A structural, sculptural high-collar wrap top in deep olive-sage. Features detailed side drapes and premium organic linen composition.",
+      "slogan": "Dress with purpose",
+      "materials": "100% Organic Linen-Tencel Blend",
+      "care": "Gentle hand wash cold. Low steam iron.",
+      "images": [
+        "/uploads/51873.jpg"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Olive Green",
+        "Oatmeal Beige"
+      ],
+      "inStock": true,
+      "fitType": "regular",
+      "isTrending": true,
+      "tags": [
+        "sculpted",
+        "wrap",
+        "linen"
+      ],
+      "stock": 1
+    },
+    {
+      "id": "p23",
+      "name": "Burgundy Embellished Peplum Top",
+      "category": "tops",
+      "subcategory": "Statement Tops",
+      "price": 2199,
+      "originalPrice": 2999,
+      "description": "An architectural evening peplum top in premium mulberry wine, styled with subtle geometric collar details and premium linen canvas lining.",
+      "slogan": "Dress with purpose",
+      "materials": "80% Organic Crepe Cotton, 20% Sustainable Viscose",
+      "care": "Dry clean only. Delicate cycle steam iron.",
+      "images": [
+        "/uploads/51871.jpg"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Wine Burgundy",
+        "Classic Obsidian"
+      ],
+      "inStock": true,
+      "fitType": "slim",
+      "isTrending": true,
+      "tags": [
+        "peplum",
+        "embellished",
+        "burgundy"
+      ],
+      "stock": 6
+    },
+    {
+      "id": "p24",
+      "name": "Navy Side-Knot Structured Top",
+      "category": "tops",
+      "subcategory": "Structured Tops",
+      "price": 1899,
+      "originalPrice": 2499,
+      "description": "A structured high-neck boatneck top in deep midnight navy, with an elegant overlapping side-knot detail and clean lines.",
+      "slogan": "Dress with purpose",
+      "materials": "100% GOTS Certified Organic Cotton & Linen Canvas",
+      "care": "Machine wash cold on gentle. Warm iron.",
+      "images": [
+        "/uploads/51876.jpg"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Midnight Navy",
+        "Pristine White"
+      ],
+      "inStock": true,
+      "fitType": "regular",
+      "isTrending": true,
+      "tags": [
+        "side-knot",
+        "structured",
+        "navy"
+      ],
+      "stock": 1
+    },
+    {
+      "id": "p25",
+      "name": "Butter Yellow Draped Wrap Top",
+      "category": "tops",
+      "subcategory": "Occasion Tops",
+      "price": 1699,
+      "originalPrice": 2299,
+      "description": "A cheerful yet highly elegant draped wrap top in delicate butter yellow. Made with lightweight tencel and a subtle self-tie collar.",
+      "slogan": "Dress with purpose",
+      "materials": "100% Eco-Spun Bamboo Tencel Weave",
+      "care": "Hand wash cold. Lay flat to dry in shade.",
+      "images": [
+        "/uploads/51877.jpg"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Lemon Butter",
+        "Sky Offwhite"
+      ],
+      "inStock": true,
+      "fitType": "regular",
+      "isTrending": true,
+      "tags": [
+        "draped",
+        "wrap",
+        "tencel"
+      ],
+      "stock": 2
+    },
+    {
+      "id": "p26",
+      "name": "Wine Lace-Up Vest Top",
+      "category": "tops",
+      "subcategory": "Party Tops",
+      "price": 1899,
+      "originalPrice": 2599,
+      "description": "A striking structured waistcoat top with front buttons, an asymmetric deep V neckline, and adjustable side lace-up elements.",
+      "slogan": "Dress with purpose",
+      "materials": "100% Organic Cotton Linen Canvas",
+      "care": "Dry clean recommended. Delicate hand wash inside out.",
+      "images": [
+        "/uploads/51872.jpg"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Wine Crimson",
+        "Classic Obsidian"
+      ],
+      "inStock": true,
+      "fitType": "slim",
+      "isTrending": true,
+      "tags": [
+        "lace-up",
+        "vest",
+        "cotton"
+      ],
+      "stock": 4
     }
   ],
   "orders": [

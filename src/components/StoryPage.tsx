@@ -94,10 +94,10 @@ export default function StoryPage() {
             <HeartHandshake className="w-5 h-5 text-rose-600" />
           </div>
           <h3 className="serif-header text-sm md:text-base font-bold text-[#1c1917]">
-            Active Communal Ledger
+            Artisan Craft & Ethical Wages
           </h3>
           <p className="text-xs text-[#78716c] leading-relaxed">
-            We actively fund local causes. Through checkout micro-donations and direct grants, VIVIDHRA ensures that we shelter animals, fund geriatric facilities, and assist differently-abled youth.
+            Every piece supports master weavers across India with fair living wages, preserving rare handloom traditions and sustainable livelihoods.
           </p>
         </div>
 

@@ -188,8 +188,8 @@ export default function OrderHistoryDashboard({
                   })}
                 </div>
 
-                {/* Sizing verification & Charity summary */}
-                <div className="border-t border-stone-100 pt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-outfit">
+                {/* Sizing verification */}
+                <div className="border-t border-stone-100 pt-4 text-xs font-outfit">
                   <div className="space-y-1.5 p-3 bg-stone-50 rounded-xl border border-stone-200/60">
                     <div className="flex items-center gap-1.5 text-stone-700">
                       <Award className="w-4 h-4 text-[#c2a46c]" />
@@ -197,16 +197,6 @@ export default function OrderHistoryDashboard({
                     </div>
                     <p className="text-[10px] text-stone-500 leading-relaxed">
                       Custom-machined and handloom adjusted coordinates verified against your registered organic structure preferences.
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-amber-50/40 rounded-xl border border-amber-900/10 flex flex-col justify-between">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-[#854d0e] font-medium">Boutique Charity Round-Up</span>
-                      <span className="font-mono font-bold text-stone-900">₹{order.donationAmount || 0}</span>
-                    </div>
-                    <p className="text-[10px] text-stone-600/90 leading-tight mt-1">
-                      Proceeds split evenly to empower animal welfare, orphans, elderly, and prosthetic aid clinics in India.
                     </p>
                   </div>
                 </div>
@@ -453,10 +443,6 @@ export default function OrderHistoryDashboard({
                         <span className="font-mono text-stone-900">
                           {selectedInvoiceOrder.shippingFee === 0 ? "FREE" : `₹${selectedInvoiceOrder.shippingFee}`}
                         </span>
-                      </div>
-                      <div className="flex justify-between text-stone-500">
-                        <span>Boutique Charity Round-Up</span>
-                        <span className="font-mono text-stone-900">₹{selectedInvoiceOrder.donationAmount || 0}</span>
                       </div>
                       <div className="border-t border-stone-200 pt-2 flex justify-between font-serif text-sm font-bold text-stone-900">
                         <span>Grand Total</span>

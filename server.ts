@@ -591,50 +591,9 @@ const INITIAL_PRODUCTS = [
 ];
 
 
-// Predefined Charities/Donation Targets
-const INITIAL_CHARITIES = [
-  {
-    id: 'c1',
-    name: 'Dignity Old Age Homes',
-    description: 'Providing food, healthcare, and comfortable shelters to homeless and neglected senior citizens.',
-    image: 'https://images.unsplash.com/photo-1581579438747-1dc8d1e0ca96?auto=format&fit=crop&q=80&w=400',
-    totalDonated: 42350,
-    impactLabel: 'Shelter days provided'
-  },
-  {
-    id: 'c2',
-    name: 'Voice of Animals Foundation',
-    description: 'Funding medical aid, rescue ambulances, and food drives for injured stray and community animals.',
-    image: 'https://images.unsplash.com/photo-1548767797-d8c844163c4c?auto=format&fit=crop&q=80&w=400',
-    totalDonated: 38200,
-    impactLabel: 'Animals fed & treated'
-  },
-  {
-    id: 'c3',
-    name: 'Yuva Orphans Trust',
-    description: 'Empowering children with school scholarships, digital classrooms, and loving foster care.',
-    image: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=400',
-    totalDonated: 51200,
-    impactLabel: 'Education sponsors logged'
-  },
-  {
-    id: 'c4',
-    name: 'Enable India (Disabled Care)',
-    description: 'Sponsoring prosthetic limbs, custom assistive tech, and vocational training for differently-abled women.',
-    image: 'https://images.unsplash.com/photo-1534761049852-325012285213?auto=format&fit=crop&q=80&w=400',
-    totalDonated: 45700,
-    impactLabel: 'Vocational kits distributed'
-  }
-];
-
 // Load Database
 let db = {
   products: INITIAL_PRODUCTS,
-  charities: INITIAL_CHARITIES,
-  donationLogs: [
-    { id: 'dl1', donorName: 'Smita Sharma', donorEmail: 'smita.sharma@vividhra.com', amount: 5000, targetCharities: ['c3'], timestamp: '2026-06-25T12:00:00.000Z' },
-    { id: 'dl2', donorName: 'Aditi Rao', donorEmail: 'aditi@yahoo.com', amount: 1500, targetCharities: ['c1', 'c2'], timestamp: '2026-06-26T14:30:00.000Z' }
-  ],
   orders: [
     {
       id: 'VIV-94827',
@@ -968,53 +927,6 @@ app.delete('/api/products/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// Charities API
-app.get('/api/donations', (req, res) => {
-  res.json({ charities: db.charities, logs: db.donationLogs });
-});
-
-app.get('/api/donations/targets', (req, res) => {
-  res.json(db.charities);
-});
-
-app.get('/api/donations/logs', (req, res) => {
-  res.json(db.donationLogs);
-});
-
-app.post('/api/donations/logs', (req, res) => {
-  const { donorName, donorEmail, amount, targetCharities } = req.body;
-  
-  if (!amount || amount <= 0) {
-    return res.status(400).json({ error: 'Please enter a valid donation amount' });
-  }
-  if (!targetCharities || targetCharities.length === 0) {
-    return res.status(400).json({ error: 'Please select at least one charity to donate to' });
-  }
-
-  const individualAmount = Math.round(amount / targetCharities.length);
-  
-  db.charities = db.charities.map(charity => {
-    if (targetCharities.includes(charity.id)) {
-      return { ...charity, totalDonated: charity.totalDonated + individualAmount };
-    }
-    return charity;
-  });
-
-  const log = {
-    id: 'dl_' + Math.random().toString(36).substr(2, 9),
-    donorName: donorName || 'An Anonymous Supporter',
-    donorEmail: donorEmail || 'anonymous@vividhra.com',
-    amount: amount,
-    targetCharities: targetCharities,
-    timestamp: new Date().toISOString()
-  };
-
-  db.donationLogs.unshift(log);
-  saveDB();
-
-  res.json(log);
-});
-
 // Fallback/Default Profile GET
 app.get('/api/user/profile', (req, res) => {
   const uid = req.query.uid as string;
@@ -1040,43 +952,6 @@ app.post('/api/user/profile', (req, res) => {
   res.json(db.users[uid]);
 });
 
-// Record Donation
-app.post('/api/donate', (req, res) => {
-  const { donorName, donorEmail, amount, selectedCharityIds } = req.body;
-  
-  if (!amount || amount <= 0) {
-    return res.status(400).json({ error: 'Please enter a valid donation amount' });
-  }
-  if (!selectedCharityIds || selectedCharityIds.length === 0) {
-    return res.status(400).json({ error: 'Please select at least one charity to donate to' });
-  }
-
-  const individualAmount = Math.round(amount / selectedCharityIds.length);
-  
-  // Update totals in DB
-  db.charities = db.charities.map(charity => {
-    if (selectedCharityIds.includes(charity.id)) {
-      return { ...charity, totalDonated: charity.totalDonated + individualAmount };
-    }
-    return charity;
-  });
-
-  // Log donation
-  const log = {
-    id: 'dl_' + Math.random().toString(36).substr(2, 9),
-    donorName: donorName || 'An Anonymous Supporter',
-    donorEmail: donorEmail || 'anonymous@vividhra.com',
-    amount: amount,
-    targetCharities: selectedCharityIds,
-    timestamp: new Date().toISOString()
-  };
-
-  db.donationLogs.unshift(log);
-  saveDB();
-
-  res.json({ success: true, log, charities: db.charities });
-});
-
 // Orders API
 app.get('/api/orders', (req, res) => {
   res.json(db.orders);
@@ -1089,7 +964,6 @@ app.post('/api/orders', (req, res) => {
     customerEmail, 
     items, 
     subtotal, 
-    donationAmount, 
     total, 
     address, 
     city,
@@ -1110,7 +984,6 @@ app.post('/api/orders', (req, res) => {
     customerName: customerName || 'Valued Patron',
     items,
     subtotal,
-    donationAmount: donationAmount || 0,
     total,
     status: 'pending' as const,
     createdAt: new Date().toISOString(),
@@ -1122,31 +995,11 @@ app.post('/api/orders', (req, res) => {
     giftWrapping: giftWrapping || false,
     promoCode: promoCode || null,
     promoDiscount: promoDiscount || 0,
-    shippingFee: shippingFee || 0
+    shippingFee: shippingFee || 0,
+    donationAmount: 0
   };
 
   db.orders.unshift(newOrder);
-
-  // If there's a checkout-roundup donation, distribute it equally among all charities
-  if (donationAmount && donationAmount > 0) {
-    const activeCharities = db.charities;
-    const individualAmt = Math.round(donationAmount / activeCharities.length);
-    
-    db.charities = db.charities.map(c => ({
-      ...c,
-      totalDonated: c.totalDonated + individualAmt
-    }));
-
-    // Add a corresponding donation log
-    db.donationLogs.unshift({
-      id: 'dl_' + Math.random().toString(36).substr(2, 9),
-      donorName: customerName || 'VIVIDHRA Patron',
-      donorEmail: customerEmail || 'guest@vividhra.com',
-      amount: donationAmount,
-      targetCharities: activeCharities.map(c => c.id),
-      timestamp: new Date().toISOString()
-    });
-  }
 
   // Clear user cart in DB
   const user = Object.values(db.users).find(u => u.email.toLowerCase() === (customerEmail || '').toLowerCase());
@@ -1155,7 +1008,7 @@ app.post('/api/orders', (req, res) => {
   }
 
   saveDB();
-  res.json({ success: true, order: newOrder, charities: db.charities });
+  res.json({ success: true, order: newOrder });
 });
 
 // Update Order Status
@@ -1392,7 +1245,6 @@ app.get('/api/admin/insights', async (req, res) => {
   try {
     const productsCount = db.products.length;
     const ordersCount = db.orders.length;
-    const totalDonations = db.charities.reduce((sum, c) => sum + c.totalDonated, 0);
 
     const fitProfiles = Object.values(db.users)
       .map(u => u.fitProfile)
@@ -1402,19 +1254,16 @@ app.get('/api/admin/insights', async (req, res) => {
 Stats:
 - Active premium garments: ${productsCount}
 - Orders processed: ${ordersCount}
-- Combined charitable donations raised: ₹${totalDonations}
 - User fit profiles logged: ${fitProfiles.length}
 
 Generate an elegant luxury fashion insight report containing:
 1. Trending Occasions: Analysis of what luxury clients are purchasing based on the seasonal collection.
 2. Fit & Return Advisory: AI insights warning about potential fit/sizing discrepancies based on waist/shoulder preferences.
-3. Purpose Impact Report: How the brand's 'Dress with purpose' slogan is driving charitable giving across old age, animals, orphans, and disabled caretakers.
 
 Return your response in a clean JSON format matching the following schema structure:
 {
   "trendingOccasions": "text outlining visual trends",
-  "sizingAdvisory": "text on body fit preferences and suggestions for design improvements",
-  "donationImpact": "text highlighting the real-world impact of donations"
+  "sizingAdvisory": "text on body fit preferences and suggestions for design improvements"
 }`;
 
     const response = await ai.models.generateContent({
@@ -1426,10 +1275,9 @@ Return your response in a clean JSON format matching the following schema struct
           type: Type.OBJECT,
           properties: {
             trendingOccasions: { type: Type.STRING },
-            sizingAdvisory: { type: Type.STRING },
-            donationImpact: { type: Type.STRING }
+            sizingAdvisory: { type: Type.STRING }
           },
-          required: ['trendingOccasions', 'sizingAdvisory', 'donationImpact']
+          required: ['trendingOccasions', 'sizingAdvisory']
         }
       }
     });
@@ -1440,8 +1288,7 @@ Return your response in a clean JSON format matching the following schema struct
     console.error('Gemini Admin insights error:', error);
     res.json({
       trendingOccasions: "Summer resort wear and organic cotton shirts are seeing the highest customer traffic, fueled by interest in relaxed, breathable shapes.",
-      sizingAdvisory: "Hourglass and athletic body types report high satisfaction with wrap dresses. Suggest monitoring shoulder sizes for the Elysian Blazer closely.",
-      donationImpact: "Our patrons' checkout rounded-up donations have funded 120+ animal shelter food bags and sponsored several educational kits at Yuva Orphans Trust."
+      sizingAdvisory: "Hourglass and athletic body types report high satisfaction with wrap dresses. Suggest monitoring shoulder sizes for the Elysian Blazer closely."
     });
   }
 });
