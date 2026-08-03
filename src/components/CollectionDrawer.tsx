@@ -38,7 +38,7 @@ export const collectionCategories: CollectionCategory[] = [
     id: 'co-ords',
     label: 'Co-ords',
     description: 'Effortless matching jacket & trouser sets',
-    image: 'https://images.unsplash.com/photo-1548624149-f9b1859aa7d0?auto=format&fit=crop&q=80&w=150&h=150'
+    image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=300'
   },
   {
     id: 'bottoms',
@@ -281,7 +281,7 @@ export default function CollectionDrawer({
             </div>
 
             {/* Scrolling Collection Categories List */}
-            <div className="flex-1 overflow-y-auto py-4 scrollbar-none">
+            <div className="flex-1 overflow-y-auto py-4 scrollbar-none" data-lenis-prevent>
               <div className="px-5 mb-5">
                 <h3 className="serif-header text-xl md:text-2xl font-bold text-[#1c1917]">
                   Mindful Silhouettes

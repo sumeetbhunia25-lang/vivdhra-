@@ -19,11 +19,7 @@ export default function AIStylist({ fitProfile, currentProduct, onClose }: AISty
     {
       id: 'init',
       role: 'assistant',
-      content: `Hello and welcome to VIVIDHRA. I am your personal Atelier Styling Advisor. It is an absolute pleasure to assist you today.
-
-Our brand is deeply dedicated to the philosophy of "dressing with purpose"—crafting versatile, premium designs that merge elegant structure with sustainable comfort. 
-
-Whether you are looking to find your perfect custom size, style a specific piece for an occasion, or build a bespoke capsule wardrobe, I am delighted to guide you. How may I elevate your style journey today?`
+      content: `Hello and welcome to VIVIDHRA! I am your Atelier Styling Advisor. How can I assist you with sizing, outfit pairings, or custom styling today?`
     }
   ]);
   const [input, setInput] = useState('');

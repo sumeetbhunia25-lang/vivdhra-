@@ -129,5 +129,13 @@ If you want to save or share your project on your own GitHub account:
 
 ---
 
+## 📚 Customization & Extension Documentation
+
+For detailed instructions on customizing brand assets, changing typography, adding inventory, managing reviews, and working with AI integrations:
+*   [Developer Customization Guide (`DEVELOPER_GUIDE.md`)](./DEVELOPER_GUIDE.md): Complete guide on adding garments, updating logos, changing brand fonts, product review persistence, mapping custom fields, and API routes.
+*   [Atelier AI Catalog Expansion Manual (`README_ATELIER_EXPANSION.md`)](./README_ATELIER_EXPANSION.md): Detailed walkthrough for the AI image-scanning catalog uploader and version control sync.
+
+---
+
 ## 📄 License
 This project is open-source and available under the MIT License.

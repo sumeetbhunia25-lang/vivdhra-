@@ -591,9 +591,43 @@ const INITIAL_PRODUCTS = [
 ];
 
 
+const INITIAL_REVIEWS = [
+  {
+    id: 'rev_101',
+    productId: 'p1',
+    authorName: 'Aishwarya R.',
+    rating: 5,
+    title: 'Flawless tailoring and silhouette',
+    comment: 'The Elysian Linen Blazer is an exquisite addition to my work capsule wardrobe. The linen structure is soft yet holds its shape effortlessly.',
+    verifiedPurchase: true,
+    createdAt: '2026-07-20T10:30:00.000Z'
+  },
+  {
+    id: 'rev_102',
+    productId: 'p1',
+    authorName: 'Priyal V.',
+    rating: 5,
+    title: 'Ideal for summer meetings',
+    comment: 'Subtle elegance and breathability. Fits standard measurements accurately.',
+    verifiedPurchase: true,
+    createdAt: '2026-07-22T14:20:00.000Z'
+  },
+  {
+    id: 'rev_103',
+    productId: 'p2',
+    authorName: 'Devika M.',
+    rating: 5,
+    title: 'Breathable & Chic',
+    comment: 'Love the handloom drape on this top! Wore it to an outdoor brunch and received endless compliments.',
+    verifiedPurchase: true,
+    createdAt: '2026-07-21T11:00:00.000Z'
+  }
+];
+
 // Load Database
 let db = {
   products: INITIAL_PRODUCTS,
+  reviews: INITIAL_REVIEWS,
   orders: [
     {
       id: 'VIV-94827',
@@ -927,6 +961,60 @@ app.delete('/api/products/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// Product Reviews GET
+app.get('/api/products/reviews', (req, res) => {
+  const { productId } = req.query;
+  let reviews = db.reviews || INITIAL_REVIEWS;
+  if (productId) {
+    reviews = reviews.filter((r: any) => r.productId === String(productId));
+  }
+  res.json(reviews);
+});
+
+// Product Reviews POST (Submit new review)
+app.post('/api/products/reviews', (req, res) => {
+  const { productId, authorName, rating, title, comment } = req.body;
+  if (!productId || !comment) {
+    return res.status(400).json({ error: 'Product ID and comment are required.' });
+  }
+
+  if (!db.reviews) {
+    db.reviews = [...INITIAL_REVIEWS];
+  }
+
+  const newReview = {
+    id: 'rev_' + Math.random().toString(36).substr(2, 9),
+    productId,
+    authorName: authorName ? String(authorName).trim() : 'Anonymous Patron',
+    rating: Math.min(5, Math.max(1, Number(rating) || 5)),
+    title: title ? String(title).trim() : 'Patron Review',
+    comment: String(comment).trim(),
+    verifiedPurchase: true,
+    createdAt: new Date().toISOString()
+  };
+
+  db.reviews.unshift(newReview);
+
+  // Dynamically update product rating and reviewCount in db.products
+  const targetProdIndex = db.products.findIndex((p: any) => p.id === productId);
+  if (targetProdIndex !== -1) {
+    const prodReviews = db.reviews.filter((r: any) => r.productId === productId);
+    const avg = Number((prodReviews.reduce((sum: number, r: any) => sum + (Number(r.rating) || 5), 0) / prodReviews.length).toFixed(1));
+    (db.products[targetProdIndex] as any).rating = avg;
+    (db.products[targetProdIndex] as any).reviewCount = prodReviews.length;
+  }
+
+  saveDB();
+
+  const productReviews = db.reviews.filter((r: any) => r.productId === productId);
+  res.json({ 
+    success: true, 
+    review: newReview, 
+    reviews: productReviews,
+    updatedProduct: targetProdIndex !== -1 ? db.products[targetProdIndex] : null 
+  });
+});
+
 // Fallback/Default Profile GET
 app.get('/api/user/profile', (req, res) => {
   const uid = req.query.uid as string;
@@ -1110,14 +1198,7 @@ ${profileAdvice}
 
 Our standard sizing ranges from XS to XL, meticulously drafted on diverse real women's bodies to eliminate the rigid restrictions of traditional off-the-rack fashion.`;
       } else if (lower.includes('hi') || lower.includes('hello') || lower.includes('greet') || lower.includes('who are you') || lower.includes('hey')) {
-        bodyText = `### Welcome to VIVIDHRA's AI Styling Suite
-
-I am your lead digital styling advisor. VIVIDHRA is deeply rooted in purposeful, sustainable fashion. Our collections are crafted using premium, eco-responsible fabrics designed to make you feel empowered, elegant, and comfortable.
-
-How can I elevate your style today? You can ask me about:
-- Tailored sizing advice based on your body shape.
-- Styling recommendations for specific occasions (Office, Parties, Leisure, or College).
-- Mix-and-match coordinates to build a perfect capsule wardrobe.`;
+        return `Hello and welcome to VIVIDHRA! I am your lead digital styling advisor. How can I assist you with custom sizing, outfit recommendations, or fabric care today?`;
       } else {
         bodyText = `### Curated Styling Guidance
 For a sophisticated look, consider the elegant art of layering. VIVIDHRA's garments are made to be versatile:
@@ -1144,7 +1225,7 @@ User Body Profile details:
 - Preferred lengths: ${fitProfile.preferredLengths}
 - Sleeve Preference: ${fitProfile.sleevePreference}
 - Modesty preference: ${fitProfile.modestyPreference}
-` : 'No custom body profile uploaded yet. (We suggest creating a "Fit Profile" for precise fits).';
+` : 'No custom body profile uploaded yet.';
 
     const productText = currentProduct ? `
 Current Product context:
@@ -1155,20 +1236,17 @@ Current Product context:
 - Description: ${currentProduct.description}
 ` : '';
 
-    const systemPrompt = `You are the Lead Senior Fashion Stylist and AI Stylist at VIVIDHRA, a premium modern luxury women's fashion brand exclusively curated for versatile womenswear. 
-The brand slogan is "Dress with purpose", reflecting varied, manifold, and diverse creativity rooted in Sanskrit, honoring Smita Sharma's mother's journey in textile design.
+    const systemPrompt = `You are the Lead Senior Fashion Stylist and AI Stylist at VIVIDHRA, a luxury women's fashion brand.
+Brand Slogan: "Dress with purpose".
 
-Your style is sophisticated, luxury-editorial, warm, professional, encouraging, and deeply fashion-conscious. 
+CRITICAL RULE FOR GREETINGS:
+If the user's input is a greeting (e.g. "hi", "hello", "hey", "good morning", "greetings"), respond in MAXIMUM 2 SHORT SENTENCES. Offer a warm welcome and ask 1 quick question on how you can assist them. DO NOT write long paragraphs, bullet lists, or essays for simple greetings.
 
-Greeting Behavior Directive:
-If the user's message is or contains a greeting (e.g. “hi”, “hello”, “hey”, “good morning”, “good evening”, “greetings”, or similar), you MUST start your response with a very warm, polite, and elegant welcome in VIVIDHRA's sophisticated brand voice (e.g., welcoming them to the Atelier, expressing delight to assist them, celebrating sustainable style). Afterward, gracefully guide them toward the next helpful action, such as product discovery, customized sizing advice based on their fit profile, exploring fabric care, or helping with order and shopping inquiries. Never give a cold or generic reply.
-
-In your response:
-1. Speak as a premium fashion consultant for women. Guide the user on styling, silhouettes, and sizing using the "VIVIDHRA Fit Profile" details if available.
-2. Highlight how VIVIDHRA garments are engineered for multi-scenario versatility: transitioning seamlessly between Office (professional), evening Parties (glamour), comfortable Home lounging, and chic College wear.
-3. Ensure you connect the response back to sustainable, eco-conscious fabrics (e.g. linen, bamboo, premium organic cotton, upcycled cupro satin) and our "Dress with purpose" mission.
-4. Recommend specific product coordinates from VIVIDHRA's catalog to complete their look (e.g., Elysian Linen Blazer, Aura Silk Cowl Dress, Sanskrit Knit Co-ord, or mockneck tops).
-5. Do not use markdown headers larger than ###. Keep answers elegant, concise, and highly editorial. Do not mention any other external brands.
+FOR OTHER STYLING QUESTIONS:
+1. Provide swift, concise, elegant styling guidance under 120 words.
+2. Recommend VIVIDHRA product coordinates and size advice matching their body profile if available.
+3. Highlight multi-scenario versatility (Office, Parties, Home, College).
+4. Do not use headers larger than ###. Keep tone warm, luxury-editorial, and helpful.
 `;
 
     // Map history to contents format
@@ -1186,7 +1264,7 @@ In your response:
 ${profileText}
 ${productText}
 
-Provide tailored styling guidance, outfit combinations, and custom size advice matching their body-type profile.`;
+Provide swift, concise, tailored styling guidance.`;
 
     contents.push({
       role: 'user',
@@ -1195,18 +1273,18 @@ Provide tailored styling guidance, outfit combinations, and custom size advice m
 
     let apiResponseText = '';
     let success = false;
-    let attempts = 3;
+    let attempts = 2;
 
-    // Call Gemini with robust retry strategy (for transient high demand / 503 errors)
+    // Call Gemini with high-speed flash model
     if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MOCK_API_KEY') {
       for (let attempt = 1; attempt <= attempts; attempt++) {
         try {
           const response = await ai.models.generateContent({
-            model: 'gemini-3.5-flash',
+            model: 'gemini-3.6-flash',
             contents: contents,
             config: {
               systemInstruction: systemPrompt,
-              temperature: 0.75,
+              temperature: 0.6,
             }
           });
           if (response?.text) {
@@ -1217,8 +1295,7 @@ Provide tailored styling guidance, outfit combinations, and custom size advice m
         } catch (apiErr: any) {
           console.warn(`Gemini API styling attempt ${attempt} failed:`, apiErr.message || apiErr);
           if (attempt < attempts) {
-            // Exponential backoff delay
-            await new Promise(resolve => setTimeout(resolve, attempt * 1200));
+            await new Promise(resolve => setTimeout(resolve, 300));
           }
         }
       }
@@ -1267,7 +1344,7 @@ Return your response in a clean JSON format matching the following schema struct
 }`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+      model: 'gemini-3.6-flash',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -1424,7 +1501,7 @@ app.post('/api/products/analyze', async (req, res) => {
         const base64Clean = image.replace(/^data:image\/\w+;base64,/, "");
         
         const response = await ai.models.generateContent({
-          model: 'gemini-3.5-flash',
+          model: 'gemini-3.6-flash',
           contents: [
             {
               inlineData: {
@@ -1535,16 +1612,12 @@ app.get('/api/admin/download-db', (req, res) => {
 
 // ---------------------- FRONTEND / STATIC SETUP ----------------------
 
-// Start listening immediately to avoid any startup connection delays or 502 errors from reverse proxies
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Vividhra server running on port ${PORT} (${process.env.NODE_ENV || 'development'} mode)`);
-});
-
-if (process.env.NODE_ENV !== 'production') {
-  createViteServer({
-    server: { middlewareMode: true },
-    appType: 'spa',
-  }).then((vite) => {
+async function startServer() {
+  if (process.env.NODE_ENV !== 'production') {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
     app.use(vite.middlewares);
     
     // Fallback index.html serving for SPAs in Dev
@@ -1552,11 +1625,17 @@ if (process.env.NODE_ENV !== 'production') {
       res.sendFile(path.join(process.cwd(), 'index.html'));
     });
     console.log('Vite dev middleware loaded successfully.');
-  });
-} else {
-  const distPath = path.join(process.cwd(), 'dist');
-  app.use(express.static(distPath));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
+  } else {
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Vividhra server running on port ${PORT} (${process.env.NODE_ENV || 'development'} mode)`);
   });
 }
+
+startServer();

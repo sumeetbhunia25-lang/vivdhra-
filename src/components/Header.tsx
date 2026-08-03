@@ -18,6 +18,7 @@ interface HeaderProps {
   products?: Product[];
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  selectedProduct?: Product | null;
 }
 
 export default function Header({
@@ -35,6 +36,7 @@ export default function Header({
   products,
   searchQuery,
   setSearchQuery,
+  selectedProduct,
 }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -126,7 +128,7 @@ export default function Header({
     ...(user?.role === 'admin' ? [{ label: 'Atelier (Admin)', view: 'admin' as const }] : []),
   ];
 
-  const isDarkHeroOverlay = activeView === 'home' && !isScrolled;
+  const isDarkHeroOverlay = activeView === 'home' && !isScrolled && !selectedProduct;
 
   return (
     <header
@@ -140,8 +142,8 @@ export default function Header({
         mobileMenuOpen
           ? 'inset-0 z-[100] h-screen w-screen bg-[#FDFCFB] overflow-y-auto'
           : `z-50 ${
-              isScrolled
-                ? 'bg-[#FDFCFB]/85 backdrop-blur-md border-b border-gray-200/80 py-3 shadow-xs'
+              isScrolled || !isDarkHeroOverlay
+                ? 'bg-[#FDFCFB]/90 backdrop-blur-md border-b border-stone-200/80 py-3 shadow-xs'
                 : 'bg-transparent py-5'
             }`
       }`}

@@ -17,6 +17,8 @@ export interface Product {
   isTrending?: boolean;
   subcategory?: string;
   tags?: string[];
+  rating?: number;
+  reviewCount?: number;
 }
 
 export interface FitProfile {
@@ -75,6 +77,17 @@ export interface Order {
   promoCode?: string | null;
   promoDiscount?: number;
   shippingFee?: number;
+}
+
+export interface ProductReview {
+  id: string;
+  productId: string;
+  authorName: string;
+  rating: number; // 1 to 5
+  title: string;
+  comment: string;
+  verifiedPurchase?: boolean;
+  createdAt: string;
 }
 
 export interface UserAccount {

@@ -312,14 +312,30 @@ export default function App() {
         searchQuery,
       };
 
-      // Restore scroll position for new state
-      const savedScroll = scrollPositionsRef.current[currentKey] || 0;
+      // Determine target scroll position for seamless cross-device UX
+      let targetScroll = 0;
+      if (selectedProduct) {
+        // Always start at top (0) when opening a product detail page
+        targetScroll = 0;
+      } else if (oldState.selectedProduct) {
+        // Going back from a product detail page: target the exact product card in the catalog grid
+        const cardElem = document.getElementById(`product-card-${oldState.selectedProduct.id}`);
+        if (cardElem) {
+          const rect = cardElem.getBoundingClientRect();
+          const currentY = (window as any).lenis?.scroll ?? window.scrollY;
+          targetScroll = Math.max(0, currentY + rect.top - 110);
+        } else {
+          targetScroll = scrollPositionsRef.current[currentKey] || 0;
+        }
+      } else {
+        targetScroll = scrollPositionsRef.current[currentKey] || 0;
+      }
+
       const restoreScroll = () => {
         if ((window as any).lenis) {
-          (window as any).lenis.scrollTo(savedScroll, { immediate: true });
-        } else {
-          window.scrollTo({ top: savedScroll, behavior: 'instant' as any });
+          (window as any).lenis.scrollTo(targetScroll, { immediate: true });
         }
+        window.scrollTo({ top: targetScroll, behavior: 'instant' as any });
       };
 
       // Call immediately, then schedule across animation frames and timeout ticks for guaranteed precision
@@ -1018,6 +1034,7 @@ export default function App() {
         products={products}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        selectedProduct={selectedProduct}
       />
 
       <CollectionDrawer
@@ -2078,6 +2095,7 @@ export default function App() {
       <AnimatePresence>
         {isSearchOpen && (
           <motion.div
+            data-lenis-prevent
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -2189,11 +2207,11 @@ export default function App() {
                       }}
                     >
                       {[
-                        { label: 'Dresses', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=80&w=200', query: 'dresses' },
-                        { label: 'Footwear', image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=200', query: 'trousers' },
-                        { label: 'Tops', image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=200', query: 'tops' },
-                        { label: 'Co-ords', image: 'https://images.unsplash.com/photo-1548624149-f9b1859aa7d0?auto=format&fit=crop&q=80&w=200', query: 'co-ord' },
-                        { label: 'Outerwear', image: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&q=80&w=200', query: 'blazers' }
+                        { label: 'Dresses', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=80&w=300', query: 'dresses' },
+                        { label: 'Footwear', image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=300', query: 'trousers' },
+                        { label: 'Tops', image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=300', query: 'tops' },
+                        { label: 'Co-ords', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=300', query: 'co-ord' },
+                        { label: 'Outerwear', image: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&q=80&w=300', query: 'blazers' }
                       ].map((cat) => (
                         <div
                           key={cat.label}
@@ -2207,12 +2225,15 @@ export default function App() {
                           }}
                           className="flex flex-col items-center flex-shrink-0 group cursor-pointer select-none"
                         >
-                          <div className="w-20 h-20 rounded-full overflow-hidden border border-stone-200/80 shadow-2xs transition-transform duration-300 group-hover:scale-105 group-hover:border-[#c2a46c]">
+                          <div className="w-20 h-20 rounded-full overflow-hidden border border-stone-200/80 shadow-2xs transition-transform duration-300 group-hover:scale-105 group-hover:border-[#c2a46c] bg-stone-100 flex items-center justify-center">
                             <img
                               src={cat.image}
                               alt={cat.label}
                               className="w-full h-full object-cover"
                               referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=300';
+                              }}
                             />
                           </div>
                           <span className="text-[12px] text-stone-700 font-medium text-center mt-2.5 font-outfit group-hover:text-[#c2a46c] transition-colors">
@@ -2245,10 +2266,13 @@ export default function App() {
                             >
                               <div className="aspect-[3/4] w-full overflow-hidden bg-stone-100 relative">
                                 <img
-                                  src={p.images[0]}
+                                  src={p.images?.[0] || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=800'}
                                   alt={p.name}
                                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                   referrerPolicy="no-referrer"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=800';
+                                  }}
                                 />
                                 {/* Gift Icon overlay on Recommended card matching reference image mockup */}
                                 <div className="absolute bottom-3 left-3 w-8 h-8 bg-black rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110">
@@ -2358,10 +2382,13 @@ export default function App() {
                         >
                           <div className="aspect-[3/4] w-full overflow-hidden bg-stone-50 relative">
                             <img
-                              src={p.images[0]}
+                              src={p.images?.[0] || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=800'}
                               alt={p.name}
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                               referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=800';
+                              }}
                             />
                             {p.originalPrice && p.originalPrice > p.price && (
                               <span className="absolute top-2 right-2 bg-red-600 text-white text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-sm shadow-xs">

@@ -133,20 +133,7 @@ export default function PremiumHero({
   const letters = "VIVIDHRA".split("");
 
   useEffect(() => {
-    // 1. Initialize Lenis Smooth Scroll
-    const lenis = new Lenis({
-      duration: 1.4,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // ultra smooth cubic ease-out
-      infinite: false,
-    });
-
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-
-    // 2. GSAP Entrance Sequencing
+    // GSAP Entrance Sequencing
     const ctx = gsap.context(() => {
       // Create an elegant master timeline
       const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
@@ -196,7 +183,6 @@ export default function PremiumHero({
     // Clean up
     return () => {
       ctx.revert();
-      lenis.destroy();
     };
   }, []);
 

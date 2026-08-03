@@ -63,13 +63,16 @@ export default function QuickViewModal({
         </button>
 
         {/* Left: Product Images Column */}
-        <div className="md:w-1/2 bg-stone-50 p-6 flex flex-col justify-between border-r border-stone-100 overflow-y-auto">
+        <div className="md:w-1/2 bg-stone-50 p-6 flex flex-col justify-between border-r border-stone-100 overflow-y-auto" data-lenis-prevent>
           <div className="relative aspect-square w-full bg-stone-100 rounded-2xl overflow-hidden flex items-center justify-center border border-stone-200/50">
             <img
               src={activeImage}
               alt={product.name}
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover transition-all duration-500"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=800';
+              }}
             />
             {isLimitedStock && (
               <span className="absolute top-4 left-4 bg-red-600 text-white text-[8px] uppercase tracking-widest px-2.5 py-1 rounded-sm font-sans font-bold shadow-xs">
@@ -89,7 +92,15 @@ export default function QuickViewModal({
                     activeImage === img ? 'border-[#c2a46c]' : 'border-stone-200 hover:border-stone-400'
                   }`}
                 >
-                  <img src={img} alt={`${product.name} ${i}`} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                  <img
+                    src={img}
+                    alt={`${product.name} ${i}`}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=800';
+                    }}
+                  />
                 </button>
               ))}
             </div>
@@ -97,7 +108,7 @@ export default function QuickViewModal({
         </div>
 
         {/* Right: Product Meta & Purchase Panel */}
-        <div className="md:w-1/2 p-6 md:p-8 flex flex-col justify-between overflow-y-auto">
+        <div className="md:w-1/2 p-6 md:p-8 flex flex-col justify-between overflow-y-auto" data-lenis-prevent>
           <div className="space-y-5 text-left">
             <div>
               {/* Slogan and Category */}

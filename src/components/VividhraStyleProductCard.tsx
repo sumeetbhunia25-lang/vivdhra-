@@ -60,6 +60,7 @@ export default function VividhraStyleProductCard({
 
   return (
     <div
+      id={`product-card-${product.id}`}
       tabIndex={0}
       className={`group relative flex flex-col bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl border border-stone-200/60 hover:border-stone-300 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c2a46c] focus-visible:ring-offset-2 h-full ${className}`}
       onMouseEnter={() => setIsHovered(true)}
@@ -75,24 +76,32 @@ export default function VividhraStyleProductCard({
         
         {/* Primary Image */}
         <img
-          src={product.images[0]}
+          src={product.images?.[0] || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=800'}
           alt={product.name}
           referrerPolicy="no-referrer"
           onLoad={() => setIsPrimaryLoaded(true)}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=800';
+            setIsPrimaryLoaded(true);
+          }}
           className={`absolute inset-0 w-full h-full object-cover transition-all duration-[800ms] ease-out ${
-            product.images.length > 1
+            product.images && product.images.length > 1
               ? (isHovered ? 'scale-105 opacity-0' : 'scale-100 opacity-100')
               : (isHovered ? 'scale-105 opacity-100' : 'scale-100 opacity-100')
           } ${isPrimaryLoaded ? 'blur-0' : 'blur-md opacity-40 bg-stone-100'}`}
         />
 
         {/* Secondary Hover Image (Vividhra style dual display) */}
-        {product.images.length > 1 && (
+        {product.images && product.images.length > 1 && (
           <img
             src={product.images[1]}
             alt={`${product.name} lifestyle`}
             referrerPolicy="no-referrer"
             onLoad={() => setIsSecondaryLoaded(true)}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800';
+              setIsSecondaryLoaded(true);
+            }}
             className={`absolute inset-0 w-full h-full object-cover transition-all duration-[800ms] ease-out ${
               isHovered ? 'scale-105 opacity-100' : 'scale-100 opacity-0'
             } ${isSecondaryLoaded ? 'blur-0' : 'blur-md opacity-40 bg-stone-100'}`}
