@@ -47,12 +47,6 @@ export const collectionCategories: CollectionCategory[] = [
     image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=150&h=150'
   },
   {
-    id: 'kurtis',
-    label: 'Kurtis',
-    description: 'Contemporary drape tunics & longlines',
-    image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=150&h=150'
-  },
-  {
     id: 'ethnic-sets',
     label: 'Ethnic Sets',
     description: 'Modern fusion sets with elegant drapes',
@@ -156,7 +150,6 @@ export default function CollectionDrawer({
       if (catId === 'tops') return p.category === 'tops';
       if (catId === 'co-ords') return p.category === 'co-ords';
       if (catId === 'bottoms') return p.category === 'trousers';
-      if (catId === 'kurtis') return p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('drape');
       if (catId === 'ethnic-sets') return p.name.toLowerCase().includes('set') || p.name.toLowerCase().includes('asymmetric');
       if (catId === 'party-wear') return p.name.toLowerCase().includes('corset') || p.name.toLowerCase().includes('satin') || p.category === 'blazers';
       if (catId === 'office-wear') return p.category === 'blazers' || p.category === 'trousers';

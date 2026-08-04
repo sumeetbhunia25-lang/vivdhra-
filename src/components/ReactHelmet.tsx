@@ -301,8 +301,6 @@ export function ReactHelmet({ activeView, selectedProduct, selectedCategory, pro
           return p.category === 'co-ords';
         } else if (selectedCategory === 'bottoms') {
           return p.category === 'trousers';
-        } else if (selectedCategory === 'kurtis') {
-          return p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('drape');
         } else if (selectedCategory === 'ethnic-sets') {
           return p.name.toLowerCase().includes('set') || p.name.toLowerCase().includes('asymmetric');
         } else if (selectedCategory === 'party-wear') {

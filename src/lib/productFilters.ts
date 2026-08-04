@@ -30,8 +30,6 @@ export function filterProducts(
       matchCategory = p.category === 'co-ords';
     } else if (selectedCategory === 'bottoms') {
       matchCategory = p.category === 'trousers';
-    } else if (selectedCategory === 'kurtis') {
-      matchCategory = p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('drape');
     } else if (selectedCategory === 'ethnic-sets') {
       matchCategory = p.name.toLowerCase().includes('set') || p.name.toLowerCase().includes('asymmetric');
     } else if (selectedCategory === 'party-wear') {
@@ -78,9 +76,6 @@ export function filterProducts(
       }
       if (q.includes('co-ord') || q.includes('coord') || q.includes('set')) {
         if (p.category === 'co-ords' || p.name.toLowerCase().includes('set')) matchSearch = true;
-      }
-      if (q.includes('kurti') || q.includes('kurtis')) {
-        if (p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('drape')) matchSearch = true;
       }
       if (q.includes('ethnic')) {
         if (p.name.toLowerCase().includes('set') || p.name.toLowerCase().includes('asymmetric')) matchSearch = true;

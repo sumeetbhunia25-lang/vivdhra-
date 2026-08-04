@@ -178,7 +178,6 @@ export default function CategoryListingPage({
                   if (cat.id === 'tops') return p.category === 'tops';
                   if (cat.id === 'co-ords') return p.category === 'co-ords';
                   if (cat.id === 'bottoms') return p.category === 'trousers';
-                  if (cat.id === 'kurtis') return p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('drape');
                   if (cat.id === 'ethnic-sets') return p.name.toLowerCase().includes('set') || p.name.toLowerCase().includes('asymmetric');
                   return p.category === cat.id;
                 }).length;

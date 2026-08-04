@@ -63,8 +63,6 @@ export default function PremiumHero({
       matchedProducts = products.filter(p => p.category === 'co-ords');
     } else if (selectedCategory === 'bottoms') {
       matchedProducts = products.filter(p => p.category === 'trousers');
-    } else if (selectedCategory === 'kurtis') {
-      matchedProducts = products.filter(p => p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('drape'));
     } else if (selectedCategory === 'ethnic-sets') {
       matchedProducts = products.filter(p => p.name.toLowerCase().includes('set') || p.name.toLowerCase().includes('asymmetric'));
     } else if (selectedCategory === 'party-wear') {

@@ -66,7 +66,6 @@ export default function Header({
     {
       title: "Ethnic & Fusion",
       items: [
-        { id: 'kurtis', label: 'Kurtis' },
         { id: 'ethnic-sets', label: 'Ethnic Sets' }
       ]
     },
@@ -94,7 +93,6 @@ export default function Header({
       if (catId === 'tops') return p.category === 'tops';
       if (catId === 'co-ords') return p.category === 'co-ords';
       if (catId === 'bottoms') return p.category === 'trousers';
-      if (catId === 'kurtis') return p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('drape');
       if (catId === 'ethnic-sets') return p.name.toLowerCase().includes('set') || p.name.toLowerCase().includes('asymmetric');
       if (catId === 'party-wear') return p.name.toLowerCase().includes('corset') || p.name.toLowerCase().includes('satin') || p.name.toLowerCase().includes('wine') || p.category === 'blazers';
       if (catId === 'office-wear') return p.category === 'blazers' || p.category === 'trousers';
