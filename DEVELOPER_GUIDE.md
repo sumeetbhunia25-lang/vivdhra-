@@ -12,6 +12,7 @@ This developer guide provides step-by-step instructions for customizing brand st
 5. [Product Reviews Storage & AI Integration](#5-product-reviews-storage--ai-integration)
 6. [Backend API Routes & Admin UI Components](#6-backend-api-routes--admin-ui-components)
 7. [Managing & Customizing Search Images, Category Avatars & Product Visuals](#7-managing--customizing-search-images-category-avatars--product-visuals)
+8. [Admin Panel Access, Authentication & Security Configuration](#8-admin-panel-access-authentication--security-configuration)
 
 ---
 
@@ -184,4 +185,39 @@ To change product photos:
 1. Go to the **Admin Panel** (`/admin` view or click "Atelier (Admin)" in header).
 2. Edit any product, click on the **Image URLs** field, and paste new image links or upload photos using the AI Scan Uploader.
 3. Or update the `"images"` array inside `/data/vividhra_db.json`.
+
+---
+
+## 8. Admin Panel Access, Authentication & Security Configuration
+
+### A. How to Access the Admin Panel
+1. **Header Navigation**: When logged in as an Admin, click **"Atelier (Admin)"** in the top navigation bar or mobile menu.
+2. **URL Parameter**: Append `?view=admin` to the web app URL.
+3. **Role Switcher**: Click the user profile icon (top right) to open the **Patron Account Drawer**, and click the **"Be Admin"** toggle button to switch role between `customer` and `admin`.
+
+### B. Where Authentication Logic is Located
+- **Backend Auth Endpoints (`/server.ts`)**:
+  - `POST /api/user/login`: Authenticates user credentials.
+  - `POST /api/user/register`: Registers new patron accounts with default fit profiles.
+  - `GET /api/user/:uid`: Retrieves user profile data.
+- **Admin Role Assignment (`server.ts` line ~810 & ~852)**:
+  - Users with email containing `"admin"` or matching `"smita.sharma@vividhra.com"` automatically receive `admin` role status.
+- **Frontend State (`src/App.tsx`)**:
+  - `user` state holds `{ uid, name, email, role: 'customer' | 'admin' }`.
+  - Header links and admin views conditionally render based on `user?.role === 'admin'`.
+
+### C. Hardening Security for Production
+1. **Password Hashing**: Upgrade plain-text password storage in `server.ts` to `bcrypt` or `argon2` hashing.
+2. **Session / JWT Tokens**: Replace raw UID responses with signed JWT tokens (`jsonwebtoken`) stored in HTTP-only cookies.
+3. **API Authorization Middleware**: In `server.ts`, wrap admin endpoints (`/api/products`, `/api/admin/*`) with a `requireAdmin` middleware function.
+
+### D. Environment Variables & Git Secrets Protection
+- **Secrets Security**: `.env` and all `.env.*` files containing actual API keys (such as `GEMINI_API_KEY`) are protected by `/.gitignore`:
+  ```gitignore
+  .env*
+  !.env.example
+  ```
+- **Git Push Protection**: `.env` will **never** be committed or pushed to GitHub repositories.
+- **Safe Template**: `.env.example` remains committed as a public template for developers to configure environment keys safely without revealing secret values.
+
 
