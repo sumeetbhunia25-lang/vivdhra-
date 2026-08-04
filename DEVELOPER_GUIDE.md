@@ -212,12 +212,30 @@ To change product photos:
 3. **API Authorization Middleware**: In `server.ts`, wrap admin endpoints (`/api/products`, `/api/admin/*`) with a `requireAdmin` middleware function.
 
 ### D. Environment Variables & Git Secrets Protection
-- **Secrets Security**: `.env` and all `.env.*` files containing actual API keys (such as `GEMINI_API_KEY`) are protected by `/.gitignore`:
-  ```gitignore
-  .env*
-  !.env.example
-  ```
-- **Git Push Protection**: `.env` will **never** be committed or pushed to GitHub repositories.
-- **Safe Template**: `.env.example` remains committed as a public template for developers to configure environment keys safely without revealing secret values.
+
+1. **How to Change/Update Your Gemini API Key**:
+   - **In AI Studio (Cloud Environment)**: Open **Settings** / **Secrets** in the top menu bar, and set or update `GEMINI_API_KEY`. The platform automatically injects this key into `process.env.GEMINI_API_KEY` on the backend server.
+   - **For Local Development (`.env`)**:
+     Create a file named `.env` in the project root directory and add your secret key:
+     ```env
+     GEMINI_API_KEY=your_private_gemini_api_key_here
+     ```
+
+2. **How Secret Keys Are Hidden from GitHub / Git**:
+   - All `.env`, `.env.local`, `.env.development`, `.env.production` files containing your actual secret keys are strictly listed in `/.gitignore`:
+     ```gitignore
+     .env
+     .env*
+     .env.local
+     .env.development
+     .env.production
+     !.env.example
+     ```
+   - When you `git commit` or `git push` your repository to GitHub, Git **automatically ignores** `.env` and **never uploads your real API key**.
+   - Only `.env.example` (which contains dummy placeholders like `GEMINI_API_KEY="MY_GEMINI_API_KEY"`) is tracked by Git, keeping your public code 100% safe.
+
+3. **Client-Side Security**:
+   - The Gemini API key is **never** exposed to the browser or client-side code (it is not prefixed with `VITE_`).
+   - All AI features (AI Stylist, Garment Image Scanner, Silhouette Analysis) run via server-side endpoints in `/server.ts` using `process.env.GEMINI_API_KEY`.
 
 
