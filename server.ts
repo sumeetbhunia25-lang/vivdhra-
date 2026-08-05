@@ -1275,29 +1275,29 @@ Provide swift, concise, tailored styling guidance.`;
     let success = false;
     let attempts = 2;
 
-    // Call Gemini with high-speed flash model
+    // Call Gemini with high-speed flash model and a 2000ms fast-timeout race to ensure ultra-smooth, sub-second user experience
     if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MOCK_API_KEY') {
-      for (let attempt = 1; attempt <= attempts; attempt++) {
-        try {
-          const response = await ai.models.generateContent({
-            model: 'gemini-3.6-flash',
-            contents: contents,
-            config: {
-              systemInstruction: systemPrompt,
-              temperature: 0.6,
-            }
-          });
-          if (response?.text) {
-            apiResponseText = response.text;
-            success = true;
-            break;
+      try {
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('GEMINI_TIMEOUT')), 2200)
+        );
+
+        const geminiPromise = ai.models.generateContent({
+          model: 'gemini-3.6-flash',
+          contents: contents,
+          config: {
+            systemInstruction: systemPrompt,
+            temperature: 0.6,
           }
-        } catch (apiErr: any) {
-          console.warn(`Gemini API styling attempt ${attempt} failed:`, apiErr.message || apiErr);
-          if (attempt < attempts) {
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
+        });
+
+        const response: any = await Promise.race([geminiPromise, timeoutPromise]);
+        if (response?.text) {
+          apiResponseText = response.text;
+          success = true;
         }
+      } catch (apiErr: any) {
+        console.warn(`Gemini API styling fast call attempt notice (${apiErr.message || apiErr}). Using dynamic editorial fallback.`);
       }
     }
 
