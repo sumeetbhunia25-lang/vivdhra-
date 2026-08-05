@@ -194,11 +194,13 @@ export default function App() {
     }
   }, [activeView, selectedCategory, selectedProduct, searchQuery]);
 
-  // Drag-scroll state for popular category bubbles
+  // Touch and Mouse Drag-scroll state for popular category bubbles
   const bubbleScrollRef = useRef<HTMLDivElement>(null);
   const [isBubbleDragging, setIsBubbleDragging] = useState(false);
   const [bubbleDragStartX, setBubbleDragStartX] = useState(0);
   const [bubbleScrollLeft, setBubbleScrollLeft] = useState(0);
+  const [touchStartY, setTouchStartY] = useState(0);
+  const [isBubbleTouchDrag, setIsBubbleTouchDrag] = useState(false);
 
   const handleBubbleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     setIsBubbleDragging(true);
@@ -208,15 +210,43 @@ export default function App() {
 
   const handleBubbleMouseLeaveOrUp = () => {
     setIsBubbleDragging(false);
+    setIsBubbleTouchDrag(false);
   };
 
   const handleBubbleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isBubbleDragging) return;
     e.preventDefault();
     const x = e.pageX - (bubbleScrollRef.current?.offsetLeft || 0);
-    const walk = (x - bubbleDragStartX) * 1.5; // sensitivity
+    const walk = (x - bubbleDragStartX) * 2.2; // increased sensitivity
     if (bubbleScrollRef.current) {
       bubbleScrollRef.current.scrollLeft = bubbleScrollLeft - walk;
+    }
+  };
+
+  const handleBubbleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return;
+    setIsBubbleDragging(true);
+    setIsBubbleTouchDrag(false);
+    const touch = e.touches[0];
+    setBubbleDragStartX(touch.pageX - (bubbleScrollRef.current?.offsetLeft || 0));
+    setTouchStartY(touch.pageY);
+    setBubbleScrollLeft(bubbleScrollRef.current?.scrollLeft || 0);
+  };
+
+  const handleBubbleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isBubbleDragging || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const x = touch.pageX - (bubbleScrollRef.current?.offsetLeft || 0);
+    const deltaX = Math.abs(x - bubbleDragStartX);
+    const deltaY = Math.abs(touch.pageY - touchStartY);
+
+    // If horizontal movement is dominant, capture interaction for fluid horizontal drag
+    if (deltaX > deltaY + 2 || isBubbleTouchDrag) {
+      setIsBubbleTouchDrag(true);
+      const walk = (x - bubbleDragStartX) * 2.2; // enhanced 2.2x touch drag sensitivity
+      if (bubbleScrollRef.current) {
+        bubbleScrollRef.current.scrollLeft = bubbleScrollLeft - walk;
+      }
     }
   };
 
@@ -2200,7 +2230,11 @@ export default function App() {
                       onMouseLeave={handleBubbleMouseLeaveOrUp}
                       onMouseUp={handleBubbleMouseLeaveOrUp}
                       onMouseMove={handleBubbleMouseMove}
-                      className="flex items-center gap-6 overflow-x-auto scroll-smooth py-2 select-none cursor-grab active:cursor-grabbing [-webkit-overflow-scrolling:touch] scrollbar-none"
+                      onTouchStart={handleBubbleTouchStart}
+                      onTouchEnd={handleBubbleMouseLeaveOrUp}
+                      onTouchCancel={handleBubbleMouseLeaveOrUp}
+                      onTouchMove={handleBubbleTouchMove}
+                      className="flex items-center gap-6 overflow-x-auto scroll-smooth py-2 select-none cursor-grab active:cursor-grabbing [-webkit-overflow-scrolling:touch] scrollbar-none touch-pan-x touch-pan-y"
                       style={{
                         scrollbarWidth: 'none',
                         msOverflowStyle: 'none'

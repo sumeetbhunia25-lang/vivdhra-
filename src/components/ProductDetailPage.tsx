@@ -1030,7 +1030,7 @@ export default function ProductDetailPage({
             {/* Bottom Thumbnail Navigation Bar */}
             {product.images.length > 1 && (
               <div 
-                className="flex items-center justify-center space-x-3 overflow-x-auto py-2 z-10"
+                className="flex items-center justify-center space-x-3 overflow-x-auto py-2 z-10 touch-pan-x touch-pan-y scrollbar-none [-webkit-overflow-scrolling:touch]"
                 onClick={(e) => e.stopPropagation()}
               >
                 {product.images.map((img, idx) => {
